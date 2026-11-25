@@ -1,6 +1,6 @@
 /* NIMBUS: the PGDM intelligence layer. Made by RUBIN.
    Wake screen, HUD, sound set, a voice you can talk to, spoken explanations,
-   compare mode, a quiz and pinch calibration. Drives the board through
+   compare mode, a quiz and the morning briefing. Drives the board through
    window.BH (defined inside the board's module). */
 (() => {
   "use strict";
@@ -118,15 +118,13 @@
     init.querySelector(".nb-btn").style.display = "none";
     try { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (e) {}
     SFX.boot();
-    startListening();
+    setVoiceChip("off");                           // voice stays off until you turn it on
     await sleep(500);
     await logLine("Waking core", "OK");
     await logLine("Hand tracking  ·  21 points per hand",
       window.NOCAM ? "NO CAMERA · MOUSE" : BHok() && BH.ready() ? "OK" : "WARMING UP");
-    const P = window.NimbusPinch;
-    await logLine("Pinch engine  ·  learns your touch", P && P.cfg.touch != null ? "TUNED" : "READY");
     await logLine("PGDM knowledge  ·  " + (KB.length || 13) + " topics", "OK");
-    await logLine("Voice link", recog ? "ONLINE" : "TYPE MODE");
+    await logLine("Voice  ·  off until you turn it on", "PRESS V");
     await sleep(600);
     init.classList.add("gone");
     hud.style.display = "";
@@ -179,8 +177,14 @@
   if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => { VOICE = pickVoice(); };
   function ring(state) { if (BHok()) BH.setRing(state); }
 
+  let voiceOn = false;
   function say(text, opts = {}) {
     showReply(text);
+    if (!voiceOn) {                                // voice off: the reply is shown, not spoken
+      hideReplySoon(opts.short ? 2200 : 3200 + text.length * 30);
+      if (opts.then) setTimeout(opts.then, 1200 + text.length * 35);
+      return;
+    }
     if (!("speechSynthesis" in window)) { hideReplySoon(4000 + text.length * 40); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -212,14 +216,14 @@
   /* ================= voice in ================= */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recog = null, awaitingUntil = 0;
-  const VERB = /^\s*(please\s+|can you\s+|hey\s+)?(show|open|explain|compare|close|clear|quiz|start|stop|pause|resume|reset|set|calculate|what is|what's|tell me|menu|lap|calibrate|recalibrate|plan|good morning|bring|make|get|turn|add|remove|cancel|schedule|what's next|brief me|call me)\b/i;
+  const VERB = /^\s*(please\s+|can you\s+|hey\s+)?(show|open|explain|compare|close|clear|quiz|start|stop|pause|resume|reset|set|what is|what's|tell me|menu|lap|plan|good morning|bring|make|get|turn|add|remove|cancel|schedule|what's next|brief me|call me)\b/i;
   const WAKE = /\b(hey\s+)?(nimbus|nimbis|nimbas|nimbuss|nimbo|nimbu|limbus|numbus|nimbuses)\b[\s,.!]*/i;
 
   function setVoiceChip(mode) {
     voiceChip.classList.remove("on", "hot", "off");
     if (mode) voiceChip.classList.add(mode);
     voiceChip.querySelector("span").textContent =
-      mode === "hot" ? "LISTENING" : mode === "on" ? 'VOICE  ·  TRY "SHOW SWOT"' : mode === "off" ? "VOICE OFF  ·  PRESS ENTER" : "VOICE";
+      mode === "hot" ? "LISTENING" : mode === "on" ? 'VOICE ON  ·  TRY "SHOW SWOT"' : mode === "off" ? "VOICE OFF  ·  PRESS V" : "VOICE";
   }
 
   function startListening() {
@@ -228,7 +232,7 @@
     recog = new SR();
     recog.continuous = true; recog.interimResults = true; recog.lang = "en-IN"; recog.maxAlternatives = 1;
     recog.onstart = () => setVoiceChip("on");
-    recog.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { recog = null; setVoiceChip("off"); } };
+    recog.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { recog = null; voiceOn = false; setVoiceChip("off"); showReply("Microphone blocked. Allow it in Chrome, then press V."); hideReplySoon(4000); } };
     recog.onend = () => { if (recog) setTimeout(() => { try { recog.start(); } catch (e) {} }, 250); };
     recog.onresult = (ev) => {
       if (speaking || performance.now() < quietUntil) return;   // don't hear ourselves
@@ -252,6 +256,26 @@
     };
     try { recog.start(); } catch (e) {}
   }
+
+  function setVoice(on) {
+    if (on === voiceOn) return;
+    voiceOn = on;
+    if (on) {
+      if (!SR) { voiceOn = false; showReply("This browser has no speech recognition. Use Chrome, or type with Enter."); hideReplySoon(4000); return; }
+      SFX.wake(); startListening(); say("Voice on.", { short: true });
+    } else {
+      const r = recog; recog = null;               // null first, so onend doesn't restart it
+      try { r && r.stop(); } catch (e) {}
+      try { speechSynthesis.cancel(); } catch (e) {}
+      setVoiceChip("off"); ring("idle"); showReply("Voice off."); hideReplySoon(1500);
+    }
+  }
+  voiceChip.classList.add("nb-ui", "nb-click");
+  voiceChip.addEventListener("click", () => setVoice(!voiceOn));
+  addEventListener("keydown", (e) => {
+    if (!started || e.target === box || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "v" || e.key === "V") setVoice(!voiceOn);
+  });
 
   /* ================= typed command (Enter) ================= */
   const box = $(`<input id="nb-cmd" class="nb-ui" placeholder='Ask Nimbus   e.g. "compare SWOT and Porter"' autocomplete="off">`);
@@ -444,6 +468,9 @@
   function handle(raw) {
     const c = raw.toLowerCase().replace(/[.?!]+$/, "").trim();
     if (!BHok()) { say("Give me a moment, I'm still waking up."); return; }
+    if (/^(turn\s+)?(voice|mic|microphone)\s+(on|off)$|^turn (on|off) (the )?(voice|mic)$|^(mute|unmute)$/.test(c)) {
+      return setVoice(/\bon\b|unmute/.test(c));
+    }
     ring("thinking"); SFX.wake();
 
     if (quiz && /\b(answer|reveal|tell me|i don'?t know|skip|give up)\b/.test(c)) return revealQuiz();
@@ -462,6 +489,8 @@
     if (/\b(what'?s next|next task|what now|what should i do now)\b/.test(c)) {
       const n = Day.next(); return say(n ? `Next: ${n.label} at ${Day.hm(n.s)}.` : "Nothing left on today's plan.", { short: true });
     }
+    if (/\bexams?\b|\bexam (calendar|schedule|dates)\b/.test(c)) { BH.openNote("0/Exam Calendar.md", "Exam Calendar"); return say("Your exam calendar. End-terms start Monday the 7th of December.", { short: true }); }
+    if (/\btime ?table\b/.test(c)) { BH.openNote("0/Weekly Timetable.md", "Weekly Timetable"); return say("Your weekly timetable.", { short: true }); }
     const wants = { routine: /\broutine\b/.test(c), calendar: /\b(calendar|schedule|agenda|meetings|events|classes|lectures)\b/.test(c),
                     plan: /\bplan\b/.test(c) && !/\bmarketing plan\b/.test(c) };
     const nWant = Object.values(wants).filter(Boolean).length;
@@ -475,10 +504,8 @@
       return say(k === "calendar" ? (s.events ? `${s.events} event${s.events > 1 ? "s" : ""} left today. First, ${s.first}.` : "Your calendar is clear.")
         : k === "plan" ? (s.next ? `Here's your day. Next up: ${s.next}.` : "Here's your day.") : "Your routine.", { short: true });
     }
-    const tool = /\bstop ?watch\b/.test(c) ? "stopwatch" : /\b(timer|countdown|count down)\b/.test(c) ? "timer"
-               : /\b(calculator|calculate|calc)\b/.test(c) ? "calc" : null;
+    const tool = /\bstop ?watch\b/.test(c) ? "stopwatch" : /\b(timer|countdown|count down)\b/.test(c) ? "timer" : null;
     if (tool) return toolCommand(tool, c);
-    if (/\b(re-?)?calibrat\w*\b/.test(c)) { ring("idle"); calibrate(); return; }
     if (/\b(close|clear|dismiss|hide|reset|remove)\b/.test(c)) { BH.closeAll(); hideQuiz(); return say("Cleared.", { short: true }); }
     if (/\b(menu|options|home|open the ring|main screen)\b/.test(c)) { if (!BH.menuOpen()) BH.toggleMenu(); return say("Menu.", { short: true }); }
     if (/\b(quiz|test me|question me|ask me)\b/.test(c)) return startQuiz();
@@ -530,76 +557,10 @@
       if (/\breset\b/.test(c)) { BH.tool("stopwatch", "rs"); return say("Reset.", { short: true }); }
       BH.tool("stopwatch", "start"); return say("Stopwatch running.", { short: true });
     }
-    // calculator: "calculate 25 times 4", "calculate 18 percent of 2500"
-    const expr = c.replace(/^.*?\b(calculate|calculator|calc)\b\s*(what is|what's)?/, "")
-      .replace(/percent of/g, "% ×").replace(/percent/g, "%")
-      .replace(/\b(times|into|multiplied by|x)\b/g, "×").replace(/\b(divided by|by|over)\b/g, "÷")
-      .replace(/\b(plus|and)\b/g, "+").replace(/\b(minus|less)\b/g, "−").replace(/[^0-9.%×÷+−()]/g, "");
-    if (/\d/.test(expr)) {
-      const t = BH.tool("calc", "set", expr);
-      const r = t && t.st.res;
-      return say(r && r !== "Error" ? "That's " + r + "." : "I couldn't work that out.", { short: true });
-    }
-    BH.openTool("calc"); return say("Calculator.", { short: true });
   }
 
   /* opening things by hand stays silent */
   const hookOpen = setInterval(() => { if (!BHok()) return; clearInterval(hookOpen); BH.onOpen = () => {}; }, 200);
-
-  /* ================= pinch calibration ("calibrate") =================
-     NIMBUS already learns your pinch from your first few tries. This is the
-     manual version: an open hand, then the thumb and index tips touching. */
-  const cal = $(`<div id="nb-cal" class="nb-ui"><div class="k">NIMBUS · HAND CALIBRATION</div>
-      <div class="s"></div><div class="m"><i></i></div><div class="x">ESC OR CLICK TO SKIP</div></div>`);
-  document.body.appendChild(cal);
-  let calRun = null;
-  async function calibrate() {
-    const P = window.NimbusPinch;
-    if (calRun || !P || !BHok() || !BH.pinchProbe) return;
-    if (window.NOCAM || window.NOTRACK) return say("I need the camera to calibrate your hand.", { short: true });
-    const msg = cal.querySelector(".s"), bar = cal.querySelector(".m i");
-    let cancel = false;
-    calRun = { stop() { cancel = true; } };
-    cal.classList.add("show"); P.calibrating = true;
-    const probe = () => BH.pinchProbe();
-    const live = setInterval(() => { const p = probe(); bar.style.width = p ? Math.round(P.meter(p.r) * 100) + "%" : "0"; }, 50);
-    const waitFor = async (pred, ms) => {
-      const t0 = performance.now();
-      while (!cancel && performance.now() - t0 < ms) { const p = probe(); if (p && pred(p)) return true; await sleep(50); }
-      return false;
-    };
-    const collect = async (pred, n, ms) => {
-      const out = [], t0 = performance.now();
-      while (!cancel && out.length < n && performance.now() - t0 < ms) { const p = probe(); if (p && pred(p)) out.push(p.r); await sleep(40); }
-      return out;
-    };
-    try {
-      msg.textContent = "Show one hand to the camera, fingers spread.";
-      SFX.step();
-      if (!(await waitFor(p => p.r > 0.6, 12000))) throw 0;
-      const open = await collect(p => p.r > 0.55, 20, 4000);
-      if (open.length < 8) throw 0;
-      SFX.step();
-      msg.textContent = "Now touch your thumb and index fingertips together, and hold.";
-      if (!(await waitFor(p => p.r < 0.55, 10000))) throw 0;
-      await sleep(300);                                   // let the fingers settle on contact
-      const touch = await collect(p => p.r < 0.6, 22, 4000);
-      if (touch.length < 8) throw 0;
-      const c = P.fromSamples(open, touch);
-      if (!c.ok) throw 0;
-      P.calibrate(c.touch);
-      msg.textContent = "Calibrated. Release your fingers.";
-      SFX.success(); say("Calibrated.", { short: true });
-      await sleep(1400);
-    } catch (e) {
-      if (!cancel) { msg.textContent = "Calibration skipped. Nimbus keeps learning from your pinches anyway."; await sleep(2400); }
-    } finally {
-      clearInterval(live); cal.classList.remove("show"); calRun = null;
-      setTimeout(() => { P.calibrating = false; }, 300);   // the hand must open again before it can click
-    }
-  }
-  cal.addEventListener("click", () => calRun && calRun.stop());
-  addEventListener("keydown", (e) => { if (calRun && e.key === "Escape") calRun.stop(); });
 
   /* ================= quiz ================= */
   const qcard = $(`<div id="nb-quiz" class="nb-ui"><div class="k">NIMBUS · QUIZ</div><div class="q"></div><div class="a"></div><div class="bar"><i></i></div></div>`);

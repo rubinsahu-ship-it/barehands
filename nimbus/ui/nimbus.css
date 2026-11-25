@@ -199,7 +199,6 @@ body { background: var(--nb-night) !important; font-family: var(--nb-sans) !impo
 .card.tool.tdone .tdisp { animation: tflash .5s steps(2) 8; color: var(--nb-rose); }
 @keyframes tflash { 50% { opacity: .15; } }
 .card.tool .tsub { text-align: center; font: 12.5px var(--nb-mono); color: var(--nb-mute); min-height: 18px; margin: 2px 0 12px; letter-spacing: .1em; }
-.card.tool .tcalc { font-size: 64px; text-align: right; padding-right: 6px; }
 .card.tool .texpr { text-align: right; padding-right: 8px; }
 .tkeys { display: grid; gap: 10px; margin-top: 10px; }
 .tkeys.k1 { grid-template-columns: 1fr; } .tkeys.k2 { grid-template-columns: 1fr 1fr; }
@@ -261,3 +260,5 @@ body { background: var(--nb-night) !important; font-family: var(--nb-sans) !impo
 @keyframes nbscan { 0% { top: -20%; opacity: 1; } 100% { top: 105%; opacity: 1; } }
 .drow.past { opacity: .42; }
 .card.tool.tool-routine .drow { min-height: 50px; }
+.nb-chip.nb-click { pointer-events: auto; cursor: pointer; }
+.nb-chip.nb-click:hover { background: rgba(183, 148, 255, .22); color: #fff; }

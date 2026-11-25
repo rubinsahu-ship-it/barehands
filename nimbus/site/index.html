@@ -247,11 +247,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
-<script src="/pinch.js"></script>
 <link rel="stylesheet" href="/nimbus.css">
 <script>if (/[?&]raftest/.test(location.search)) window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 16);</script>
 </head>
-<body><div class="nb-badge">Made by <b>RUBIN</b><span> · built on barehands by Jared Rhodenizer</span></div>
+<body><div class="nb-badge">Made by <b>RUBIN</b></div>
 <!-- Opened by double-clicking the file instead of through the server? Everything
      client-side still works (render, camera, gesture math), so the page LOOKS
      alive, but every /orb /tree /note /state call dies silently: you can pinch
@@ -288,7 +287,7 @@ setTimeout(function () {
 <video id="cam" autoplay playsinline muted></video>
 <div id="behind"></div>
 <div id="boot">NIMBUS<br><span style="color:#aab0e0;font-size:12px;letter-spacing:0.22em">PGDM INTELLIGENCE INTERFACE</span><br><span style="color:#afa9d7;font-size:13px">loading hand tracker… allow the camera when asked</span></div>
-<div id="hint">Touch thumb to index = click &nbsp;·&nbsp; Touch the ring = menu &nbsp;·&nbsp; Say <b>"show SWOT"</b> or <b>"start a 5 minute timer"</b> &nbsp;·&nbsp; Enter = type a command</div>
+<div id="hint">Pinch = grab &nbsp;·&nbsp; Quick pinch the ring = menu &nbsp;·&nbsp; <b>V</b> = voice on/off &nbsp;·&nbsp; <b>Enter</b> = type a command</div>
 <div id="debug"></div>
 <div id="toast"></div>
 
@@ -493,7 +492,7 @@ function makeRing() {
   BEHIND.appendChild(el);
   const it = { el, id: UID++, type: "widget",
     def: { title: (CFG.name || "Ring"), file: "", w: "ring" },
-    x: innerWidth * 0.30, y: innerHeight * 0.45, scale: 1,
+    x: innerWidth * 0.26, y: innerHeight * 0.47, scale: 0.76,
     vx: 0, vy: 0, grabbedBy: [], ox: 0, oy: 0, flying: false, stretch: null };
   it.anim = { k: "in", t: 0 }; it.el.style.opacity = "0.05";
   RINGS.set(it.id, ringCanvas(el));
@@ -1300,7 +1299,7 @@ function ringToggle(ring) {
   items.filter(i => i.type === "browser").forEach(killItem);
   const defs = (CFG.orbs || []).map((o, i) => {
     if (o.kind === "tools")
-      return { title: o.title || "Tools", body: "Timer · Stopwatch · Calculator", orb: "tools" };
+      return { title: o.title || "Tools", body: "Timer · Stopwatch", orb: "tools" };
     if (o.kind === "media") {
       const p = treeCounts(PROPSTREE, true);
       return { title: o.title || "Props",
@@ -1391,7 +1390,7 @@ function browserRows(b) {
     });
   };
   if (b.bkind === "tools") {
-    [["Timer", "timer"], ["Stopwatch", "stopwatch"], ["Calculator", "calc"]]
+    [["Timer", "timer"], ["Stopwatch", "stopwatch"]]
       .forEach(([t, f]) => out.push({ d: 0, t, k: "widget", f }));
     return out;
   }
@@ -1714,7 +1713,6 @@ function getCursor(i) {
 function dropCursor(i) {
   const cur = cursors[i];
   if (!cur) return;
-  cur.probKill = true; cur.history = []; cur.grabT = -1e9;   // lost hand: no tap, no throw
   items.forEach(c => { const k = c.grabbedBy.indexOf(i); if (k >= 0) endGrab(c, i, cur); });
   cur.el.remove();
   delete cursors[i];
@@ -1783,10 +1781,6 @@ function beginGrab(c, i, cur) {
       c.mode = "move";
       c.holdX = cur.x; c.holdY = cur.y; c.holdT = performance.now();
       c.tapX = cur.x; c.tapY = cur.y;   // v3.1: tap-close discrimination
-    } else if (c.type === "tool") {
-      c.tapX = cur.x; c.tapY = cur.y;
-      c.holdX = cur.x; c.holdY = cur.y; c.holdT = performance.now();
-      c.mode = toolTap(c, cur) ? "press" : "move";
     } else if (c.type === "widget") {
       // the ring: carried like a card; a quick tap blooms the orbs
       c.mode = "move";
@@ -1828,7 +1822,7 @@ function endGrab(c, i, cur) {
       const bMs = performance.now() - (cur.grabT || 0);
       const bTrav = Math.hypot(cur.x - (c.tapX || cur.x),
                                cur.y - (c.tapY || cur.y));
-      if (bMs < 700 && bTrav < 30) browserTap(c, cur);
+      if (bMs < 350 && bTrav < 24) browserTap(c, cur);
     }
     // v3.3/v3.8: a quick tap on the GRIP BAR closes — notes and
     // folder panes alike
@@ -1837,7 +1831,7 @@ function endGrab(c, i, cur) {
       const gMs = performance.now() - (cur.grabT || 0);
       const gTrav = Math.hypot(cur.x - (c.tapX || cur.x),
                                cur.y - (c.tapY || cur.y));
-      if (gMs < 600 && gTrav < 30) killItem(c);
+      if (gMs < 350 && gTrav < 24) killItem(c);
       c.barGrab = false;
     }
     // GESTURE v3 (2026-08-14, Jared's spec — "make it a single pinch"):
@@ -1850,7 +1844,7 @@ function endGrab(c, i, cur) {
       const tMs = performance.now() - (cur.grabT || 0);
       const tTrav = Math.hypot(cur.x - (c.tapX || cur.x),
                                cur.y - (c.tapY || cur.y));
-      if (tMs < 600 && tTrav < 30) openPanel(c);
+      if (tMs < 300 && tTrav < 26) openPanel(c);
     }
     // GESTURE v3.1 (2026-08-14, the crush is DEAD — "that is happening
     // too naturally"): THE TAP IS SYMMETRIC — tap opens closed things,
@@ -1864,7 +1858,12 @@ function endGrab(c, i, cur) {
       const xMs = performance.now() - (cur.grabT || 0);
       const xTrav = Math.hypot(cur.x - (c.tapX || cur.x),
                                cur.y - (c.tapY || cur.y));
-      if (xMs < 450 && xTrav < 26) killItem(c);
+      if (xMs < 300 && xTrav < 26) killItem(c);
+    }
+    if (c.type === "tool" && !cur.probKill) {
+      const kMs = performance.now() - (cur.grabT || 0);
+      const kTr = Math.hypot(cur.x - (c.tapX ?? cur.x), cur.y - (c.tapY ?? cur.y));
+      if (kMs < 350 && kTr < 24) toolTap(c, { x: c.tapX ?? cur.x, y: c.tapY ?? cur.y });
     }
     // PHASE 2 quick-tap releases: the RING toggles its orbital bloom;
     // an ORB grows into its browser pane (same discrimination gate as
@@ -1873,7 +1872,7 @@ function endGrab(c, i, cur) {
       const qMs = performance.now() - (cur.grabT || 0);
       const qTr = Math.hypot(cur.x - (c.tapX ?? cur.x),
                              cur.y - (c.tapY ?? cur.y));
-      if (qMs < 700 && qTr < 30) {
+      if (qMs < 350 && qTr < 24) {
         if (c.type === "widget" && c.def.w === "ring" &&
             c.mode === "move") {
           const sc = RINGS.get(c.id);
@@ -1933,7 +1932,7 @@ function endGrab(c, i, cur) {
           // energy became spin momentum during the drag instead.
           if ((c.type === "model" && c.mode === "rotate") ||
               (c.type === "widget" && c.mode !== "move") ||
-              c.mode === "pinned" || c.mode === "press") {
+              c.mode === "pinned") {
             /* spin, not toss / taps, slides + pinned furniture never fling */
           } else if ((c.type !== "panel" && c.type !== "browser") ||
               c.mode !== "scroll" ||
@@ -2140,9 +2139,7 @@ async function boot() {
       lastVideoTs = cam.currentTime;
       const res = landmarker.detectForVideo(cam, now);
       const seen = new Set();
-      const _slots = nimbusSlots(res);
-      (res.landmarks || []).forEach((lms, _k) => {
-        const i = _slots[_k];
+      (res.landmarks || []).forEach((lms, i) => {
         seen.add(i);
         const cur = getCursor(i);
         const tip = toScreen(lms[8]), thumb = toScreen(lms[4]);
@@ -2156,7 +2153,7 @@ async function boot() {
         const gap = Math.hypot(lms[4].x - lms[8].x, lms[4].y - lms[8].y);
         const ratio = span > 0 ? gap / span : 1;
         const px = (tip.x + thumb.x) / 2, py = (tip.y + thumb.y) / 2;
-        nimbusTrack(cur, lms, (res.worldLandmarks || [])[_k], px, py, now);
+        cur.x += (px - cur.x) * 0.45; cur.y += (py - cur.y) * 0.45;
         cur.history.push({ x: cur.x, y: cur.y, t: now });
         if (cur.history.length > 10) cur.history.shift();   // v3.6: peak-fling window
 
@@ -2287,8 +2284,10 @@ async function boot() {
         // v3.9.32 (his final pinch sample: perfect signature, gap
         // 0.22-0.30 vs the 0.22 frontal ceiling): frontal eased to
         // 0.32 — the contrast law carries the touch duty.
-        cur.pinched = nimbusDecide(cur, now, { garbage: handGarbage, holding: holdingI, speed: hspd,
-                      legacyIn: ratio < (aspect < 2.0 ? 0.38 : 0.32), legacyRel: relOk });
+        cur.pinched = handGarbage ? false
+                    : wasPinched ? !relOk
+                                 : ratio < (aspect < 2.0 ? 0.38 : 0.32) &&
+                                   (okNow || cur.okEma > 0.55 || holdingI);
         // v3.9.15 — PINCH PROBATION (his fold-through catch: closing a
         // hand into a curl passes THROUGH a lawful OK-sign for two
         // frames — index meets thumb while the back fingers are still
@@ -2301,7 +2300,7 @@ async function boot() {
         else if (cur.pinched && wasPinched &&
                  now - (cur.pinchT || 0) < 400 && hspd < 600 && !holdingI) {
           cur.badRun = okBack ? 0 : (cur.badRun || 0) + 1;
-          /* NIMBUS: probation drop retired (the strict pinch re-arms only on an open hand) */
+          if (cur.badRun >= 4) { cur.pinched = false; cur.probKill = true; }
         } else cur.badRun = 0;
         if (cur.pinched) cur.lastPinchT = now;   // v3.9: clap disqualifier
         cur.el.classList.toggle("pinched", cur.pinched);
@@ -2803,7 +2802,7 @@ async function boot() {
         }
         if (dbg.style.display === "block")
           dbg.textContent = `mode ${MODE}\nfps ${fps}\nhands ${res.landmarks.length}` +
-            `\npinch ${(cur.ps && cur.ps.r != null ? cur.ps.r : 0).toFixed(2)} (in<${NimbusPinch.cfg.tIn} out>${NimbusPinch.cfg.tOut}) tip ${cur.pm && cur.pm.tip ? "Y" : "n"} 2d ${ratio.toFixed(2)} ${cur.pinched ? "CLOSED" : "open"}` +
+            `\npinch ${ratio.toFixed(2)} ${cur.pinched ? "CLOSED" : "open"}` +
             `\npalm ${cur.palmOpen ? "OPEN" : "-"}${cur.fpSplay ? " CLAW" : ""} pull ph${cur.fp ? cur.fp.ph : 0}` +
             `\n${cur.fpDbg || ""}` + (SAMPLED ? `\n${SAMPLED}` : "");
       });
@@ -3229,7 +3228,7 @@ window.BH = {
   ready() { return !!landmarker; },
 };
 
-// ---- TOOLS: Timer, Stopwatch, Calculator. Glass cards with big tap keys;
+// ---- TOOLS: Timer, Stopwatch. Glass cards with big tap keys;
 // pinch-drag moves them, a quick pinch on a key presses it.
 const DAYK = { routine: 1, calendar: 1, plan: 1 };
 const TOOL_DEF = {
@@ -3244,11 +3243,6 @@ const TOOL_DEF = {
     `<div class="tdisp">00:00.0</div><div class="tsub tlaps">&nbsp;</div>
      <div class="tkeys k3"><b data-a="go" class="tgo">Start</b><b data-a="lap">Lap</b><b data-a="rs">Reset</b></div>
      <div class="tkeys k1"><b data-a="x" class="tx">Close</b></div>` },
-  calc: { title: "Calculator", body:
-    `<div class="tdisp tcalc">0</div><div class="tsub texpr">&nbsp;</div>
-     <div class="tkeys k4">${["C","(",")","÷","7","8","9","×","4","5","6","−","1","2","3","+","0",".","%","="]
-       .map(k => `<b data-a="k${k}"${k === "=" ? ' class="tgo"' : ""}>${k}</b>`).join("")}</div>
-     <div class="tkeys k2"><b data-a="bk">⌫</b><b data-a="x" class="tx">Close</b></div>` },
 };
 function openTool(kind, opts = {}) {
   const d = TOOL_DEF[kind]; if (!d) return null;
@@ -3294,10 +3288,6 @@ function toolDraw(t) {
     q(".tdisp").textContent = fmt(s.acc + (s.run ? now - s.t0 : 0), true);
     q(".tgo").textContent = s.run ? "Pause" : "Start";
     q(".tlaps").innerHTML = s.laps.length ? s.laps.slice(-3).map((l, i, a) => `L${s.laps.length - a.length + i + 1} ${fmt(l, true)}`).join(" · ") : "&nbsp;";
-  } else if (t.tool === "calc") {
-    q(".texpr").innerHTML = s.res !== "" ? escT(s.expr) + " =" : "&nbsp;";
-    const v = s.res !== "" ? s.res : (s.expr || "0");
-    q(".tcalc").textContent = v; q(".tcalc").style.fontSize = v.length > 12 ? "38px" : v.length > 8 ? "52px" : "";
   }
 }
 function toolAct(t, a, arg) {
@@ -3319,36 +3309,30 @@ function toolAct(t, a, arg) {
     }
     else if (a === "lap") s.laps.push(s.acc + (s.run ? now - s.t0 : 0));
     else if (a === "rs") { s.run = false; s.acc = 0; s.laps = []; }
-  } else if (t.tool === "calc") {
-    if (a === "bk") { if (s.res !== "") { s.res = ""; } s.expr = s.expr.slice(0, -1); }
-    else if (a === "set") { s.expr = arg; s.res = ""; toolAct(t, "k="); return; }
-    else if (a === "kC") { s.expr = ""; s.res = ""; }
-    else if (a === "k=") {
-      const js = s.expr.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/(\d+(?:\.\d+)?)%/g, "($1/100)");
-      try {
-        if (!/^[0-9+\-*/().\s]+$/.test(js)) throw 0;
-        const v = Function('"use strict";return (' + js + ")")();
-        s.res = Number.isFinite(v) ? String(+v.toFixed(8)) : "Error";
-      } catch (e) { s.res = "Error"; }
-    } else if (a[0] === "k") {
-      if (s.res !== "") { s.expr = /[0-9.(]/.test(a.slice(1)) || s.res === "Error" ? "" : s.res; s.res = ""; }
-      if (s.expr.length < 40) s.expr += a.slice(1);
-    }
   }
   toolDraw(t);
 }
+// distance from a point to a key's box (0 = inside)
+function keyDist(b, x, y) {
+  const r = b.getBoundingClientRect();
+  return Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+}
+function nearestKey(keys, x, y, max) {
+  let best = null, bd = max;
+  for (const b of keys) { const d = keyDist(b, x, y); if (d <= bd) { bd = d; best = b; } }
+  return best;
+}
 function toolTap(t, cur) {
-  for (const b of t.el.querySelectorAll("[data-a]")) {
-    const r = b.getBoundingClientRect();
-    if (cur.x >= r.left - 4 && cur.x <= r.right + 4 && cur.y >= r.top - 4 && cur.y <= r.bottom + 4) {
-      b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit");
-      const a = b.dataset.a;
-      if (window.NimbusSFX) NimbusSFX.key([...t.el.querySelectorAll("[data-a]")].indexOf(b));
-      if (a === "x") setTimeout(() => toolAct(t, a), 0); else toolAct(t, a);
-      return true;
-    }
-  }
-  return false;
+  const keys = [...t.el.querySelectorAll("[data-a]")];
+  // what you saw lit up while aiming is what gets pressed; otherwise the key at / nearest the cursor
+  let b = cur.hovKey && keys.includes(cur.hovKey) && performance.now() - (cur.hovT || 0) < 450 ? cur.hovKey : null;
+  if (!b) b = nearestKey(keys, cur.x, cur.y, 34);
+  if (!b) return false;
+  b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit");
+  const a = b.dataset.a;
+  if (window.NimbusSFX) NimbusSFX.key(keys.indexOf(b));
+  if (a === "x") setTimeout(() => toolAct(t, a), 0); else toolAct(t, a);
+  return true;
 }
 setInterval(() => items.forEach(i => { if (i.type === "tool" && i.el.isConnected) toolDraw(i); }), 100);
 BH.openTool = (kind, opts) => openTool(kind, opts || {});
@@ -3366,70 +3350,26 @@ BH.ringTo = (fx, fy, sc) => {
 BH.tool = (kind, a, arg) => { const t = openTool(kind); if (t) toolAct(t, a, arg); return t; };
 BH.closeTool = (kind) => items.filter(i => i.type === "tool" && i.tool === kind).forEach(killItem);
 
-// ---- STRICT PINCH glue: pinch.js (window.NimbusPinch) does the maths, this wires it in
-function nimbusSlots(res) {
-  const L = res.landmarks || [], out = [];
-  if (!L.length) return out;
-  const pos = L.map(l => toScreen(l[9]));
-  const near = (id, k) => { const c = cursors[id]; return c && c.ax != null ? Math.hypot(c.ax - pos[k].x, c.ay - pos[k].y) : 1e6; };
-  if (L.length === 1) {
-    const d0 = near(0, 0), d1 = near(1, 0);
-    if (Math.min(d0, d1) < innerWidth * 0.3) out[0] = d0 <= d1 ? 0 : 1;
-    else out[0] = !cursors[0] ? 0 : !cursors[1] ? 1 : (d0 <= d1 ? 0 : 1);
-  } else {
-    const keep = near(0, 0) + near(1, 1), swap = near(1, 0) + near(0, 1);
-    out[0] = swap < keep ? 1 : 0; out[1] = 1 - out[0];
-    for (let k = 2; k < L.length; k++) out[k] = k;
-  }
-  return out;
-}
-function nimbusTrack(cur, lms, wl, px, py, now) {
-  const P = window.NimbusPinch;
-  if (!P) { cur.x += (px - cur.x) * 0.45; cur.y += (py - cur.y) * 0.45; return; }
-  const st = cur.ps || (cur.ps = {});
-  const m = P.metrics(lms, wl, cam.videoWidth || 1280, cam.videoHeight || 720);
-  cur.pm = m; cur.seenT = now;
-  const a5 = toScreen(lms[5]), a9 = toScreen(lms[9]);
-  cur.ax = a9.x; cur.ay = a9.y;
-  const c = P.cursor(st, { x: (a5.x + a9.x) / 2, y: (a5.y + a9.y) / 2 }, { x: px, y: py }, m.r, now);
-  cur.x = c.x; cur.y = c.y;
-  if (!cur.pmEl) { cur.pmEl = document.createElement("i"); cur.pmEl.className = "pm"; cur.el.appendChild(cur.pmEl); }
-  const k = P.meter(st.r != null ? st.r : m.r);
-  cur.pmEl.style.setProperty("--k", k.toFixed(3));
-  cur.el.classList.toggle("near", k > 0.8);
-}
-function nimbusDecide(cur, now, ctx) {
-  const P = window.NimbusPinch;
-  if (!P || !cur.pm) return ctx.garbage ? false : cur.pinched ? !ctx.legacyRel : ctx.legacyIn;
-  if (P.calibrating) ctx.garbage = true;          // calibrating: fingers move, nothing clicks
-  const out = P.step(cur.ps, cur.pm, now, ctx);
-  if (out.onset) {
-    if (window.NimbusSFX) NimbusSFX.click();
-    cur.el.classList.remove("click"); void cur.el.offsetWidth; cur.el.classList.add("click");
-    clearTimeout(cur.clickT); cur.clickT = setTimeout(() => cur.el.classList.remove("click"), 400);
-  }
-  return out.pinched;
-}
 // what a pinch would press right now: the key / row under each open hand lights up
 setInterval(() => {
   document.querySelectorAll(".hov").forEach(e => e.classList.remove("hov"));
   const hs = [0, 1].map(k => cursors[k]).filter(c => c && !c.pinched && c.el.isConnected);
   if (!hs.length) return;
-  for (const it of items) {
-    if (!it.el.isConnected || (it.anim && it.anim.k === "out")) continue;
-    const sel = it.type === "tool" ? "[data-a]" : it.type === "browser" ? ".brow" : null;
-    if (!sel) continue;
-    for (const b of it.el.querySelectorAll(sel)) {
-      const r = b.getBoundingClientRect();
-      if (hs.some(c => c.x >= r.left && c.x <= r.right && c.y >= r.top && c.y <= r.bottom)) b.classList.add("hov");
-    }
+  for (const c of hs) {
+    // the top card under this hand; on a tool card, light the ONE key a pinch would press (magnetic: the nearest within 34 px)
+    const it = hitTest(c);
+    if (!it || (it.anim && it.anim.k === "out")) { c.hovKey = null; continue; }
+    if (it.type === "tool") {
+      const k = nearestKey([...it.el.querySelectorAll("[data-a]")], c.x, c.y, 34);
+      c.hovKey = k; c.hovT = performance.now();
+      if (k) k.classList.add("hov");
+    } else if (it.type === "browser") {
+      c.hovKey = null;
+      for (const b of it.el.querySelectorAll(".brow")) { const r = b.getBoundingClientRect();
+        if (c.x >= r.left && c.x <= r.right && c.y >= r.top && c.y <= r.bottom) b.classList.add("hov"); }
+    } else c.hovKey = null;
   }
-}, 60);
-BH.pinchProbe = () => {
-  const now = performance.now();
-  const hs = [0, 1].map(k => cursors[k]).filter(c => c && c.ps && c.ps.r != null && now - (c.seenT || 0) < 300);
-  return hs.length ? { r: hs[0].ps.r, tip: !!(hs[0].pm && hs[0].pm.tip), hands: hs.length } : null;
-};
+}, 50);
 
 // ---- MOUSE BACKUP: click = tap, drag = move/scroll, wheel = scroll
 (() => {

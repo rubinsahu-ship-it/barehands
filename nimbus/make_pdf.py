@@ -53,16 +53,16 @@ s += [Paragraph("NIMBUS - PGDM Intelligence Interface", H1),
 
 s.append(Paragraph("1. Project name", H2))
 s.append(Paragraph("<b>NIMBUS</b> (PGDM Intelligence Interface): a webcam-based assistant where notes, framework images, a timer, "
-                   "a stopwatch and a calculator float on screen as glass cards. You pinch, throw and stretch them with your hands, "
-                   "or just speak a command. No headset, controllers or gloves. It is built on the open-source project <i>barehands</i> "
-                   "by Jared Rhodenizer and adapted for PGDM students.", B))
+                   "a stopwatch and your day plan float on screen as glass cards. You pinch, throw and stretch them with your hands, "
+                   "or just speak a command. No headset, controllers or gloves. Made by RUBIN for PGDM students.", B))
 
 s.append(Paragraph("2. Benefits", H2))
 s += bullets([
     "<b>Learn by handling ideas:</b> pull SWOT, Porter's Five Forces, BCG or Ansoff onto the board and arrange them side by side.",
-    "<b>Ready-made PGDM content:</b> study notes (strategy, marketing, finance, operations, placements) and 8 framework images.",
-    "<b>Voice commands:</b> \"show SWOT\", \"explain BCG matrix\", \"compare SWOT and Porter\", \"quiz me\"; it answers out loud.",
-    "<b>Study tools:</b> a timer for presentations and group discussions, a stopwatch with laps, and a calculator (also by voice: \"calculate 18 percent of 2500\").",
+    "<b>Ready-made PGDM content:</b> the exam calendar and weekly timetable, study notes and framework images (SWOT, BCG and more by voice).",
+    "<b>Voice commands:</b> \"show SWOT\", \"explain BCG matrix\", \"compare SWOT and Porter\", \"quiz me\"; it answers out loud. Voice starts off: press V to turn it on.",
+    "<b>Study tools:</b> a timer for presentations and group discussions and a stopwatch with laps (also by voice: \"start a 5 minute timer\").",
+    "<b>Morning briefing:</b> say \"all systems online\" and NIMBUS lays out your routine, today's calendar and a planned day, which you tick off by hand.",
     "<b>Always works:</b> if there is no camera or mic, the mouse and typed commands (press Enter) do everything.",
     "<b>Free and online:</b> runs in Chrome from one link, with no sign-up or API keys.",
 ])
@@ -73,16 +73,12 @@ s.append(table([
     ["1. Wake", "A wake screen with the NIMBUS halo and a sound swell. Clicking WAKE NIMBUS starts the camera, the microphone and the voice."],
     ["2. Camera", "The browser asks for webcam access. Video stays on your device; it is not uploaded."],
     ["3. Hand tracking", "Google MediaPipe finds 21 points on each hand in every frame, right in the browser."],
-    ["4. Gestures", "Touch your thumb and index fingertips to click or grab; move to drag, spread two hands to stretch, flick to throw. "
-                    "A ring around the cursor closes as your fingers close, so you can see the click coming."],
-    ["5. Pinch engine", "A click counts when the fingertips touch. Every camera measures a touch slightly differently, so NIMBUS learns "
-                        "yours: each quick close of the fingers leaves a smallest gap, and the click line sits just above your typical one. "
-                        "It starts forgiving and tightens after two or three pinches. One click per pinch: the fingers must open again "
-                        "before the next. A One Euro filter steadies the cursor, which holds still while you pinch. Say \"calibrate\" to retune it."],
-    ["6. The ring and menu", "Tap the NIMBUS ring and three orbs bloom: <b>PGDM Notes</b>, <b>Frameworks</b> and <b>Tools</b>. Only one menu pane is open at a time."],
-    ["7. Cards", "Pick a row and it opens as a glass card in a free spot. Cards you place stay put until you close them."],
-    ["8. Voice", "The browser listens for commands such as \"show SWOT\" or \"start a 5 minute timer\", acts on them, and replies with a short spoken line. The ring shows LISTENING, THINKING or SPEAKING."],
-    ["9. Rendering", "three.js and CSS draw the glass cards, the HUD and effects over the live camera picture."],
+    ["4. Gestures", "Pinch (index and thumb, other fingers up) to grab, move to drag, "
+                    "spread two hands to stretch, flick to throw. A quick pinch on the ring, a menu row or a card key presses it."],
+    ["5. The ring and menu", "Tap the NIMBUS ring and three orbs bloom: <b>PGDM Notes</b>, <b>Frameworks</b> and <b>Tools</b>. Only one menu pane is open at a time."],
+    ["6. Cards", "Pick a row and it opens as a glass card in a free spot. Cards you place stay put until you close them."],
+    ["7. Voice", "The browser listens for commands such as \"show SWOT\" or \"start a 5 minute timer\", acts on them, and replies with a short spoken line. The ring shows LISTENING, THINKING or SPEAKING."],
+    ["8. Rendering", "three.js and CSS draw the glass cards, the HUD and effects over the live camera picture."],
 ], [32 * mm, W - 32 * mm]))
 s.append(Spacer(1, 4))
 s.append(Paragraph("<b>Where the content comes from.</b> Notes are plain markdown files in folders. Images are PNG files in a media folder. "
@@ -96,30 +92,29 @@ s.append(table([
     ["Web Speech API", "Speech recognition for voice commands and speech synthesis for the spoken replies, built into Chrome. Free, no keys."],
     ["Web Audio API", "The NIMBUS sound set (wake swell, glass clicks, bells, timer chime) is synthesised live in the browser; no audio files."],
     ["Google MediaPipe", "Hand tracking from the webcam (21 points per hand, in the image and in 3D), loaded from a CDN when the page opens."],
-    ["One Euro filter", "A standard smoothing filter for hand and pointer input (Casiez, Roussel and Vogel, 2012): steady when still, fast when moving."],
     ["three.js", "3D and glass rendering for cards, holograms and effects."],
     ["Python (standard library)", "A small local server (server.py) for running the board on your own computer."],
     ["Python + Pillow", "Generates the framework images (SWOT, Porter, BCG, Ansoff, 4Ps and more) and builds the static site."],
     ["Markdown", "Format for every study note, so notes are easy to write and edit."],
     ["Netlify", "Hosts the live app as a static site on a free URL; deployed with the Netlify command-line tool."],
-    ["GitHub", "Code repository for the original project (jaredrhod/barehands) and the copy used here."],
+    ["GitHub", "Code repository for the project."],
     ["Claude Code (Anthropic)", "AI coding assistant used to set up, adapt, brand and deploy the project."],
 ], [48 * mm, W - 48 * mm]))
 s.append(Spacer(1, 6))
 s.append(table([
     ["Item", "Details"],
     ["Code repository", "github.com/rubinsahu-ship-it/barehands"],
-    ["Original project", "github.com/jaredrhod/barehands (open source, copyleft license; keep the credit and LICENSE if you reuse it)"],
+    ["Licence", "The hand-tracking board is open source (AGPL-3.0). Keep the LICENSE file if you reuse the code."],
     ["Live link", "https://barehands.netlify.app"],
     ["API keys", "None. Hand tracking, voice and hosting all run without API keys, accounts or paid services."],
     ["Run it on your computer", "Clone the repo, run <b>python3 server.py</b>, then open http://127.0.0.1:8794/stage.html in Chrome."],
 ], [38 * mm, W - 38 * mm]))
 
 s.append(Paragraph("5. Time taken", H2))
-s.append(Paragraph("About <b>4 days</b> of build time (21 to 24 November 2026): running the original project locally, hosting it on Netlify, "
+s.append(Paragraph("About <b>4 days</b> of build time (21 to 24 November 2026): setting up the open-source hand-tracking board, hosting it on Netlify, "
                    "branding it as NIMBUS, writing the PGDM notes, generating the framework images, adding the boot screen, HUD, voice commands, "
-                   "quiz, timer, stopwatch and calculator, and testing and fixing glitches. The original barehands project already provided the "
-                   "hand tracking and the board; this work is the adaptation.", B))
+                   "quiz, timer, stopwatch, morning briefing, and testing and fixing glitches. Hand tracking runs on the open-source board; "
+                   "everything NIMBUS adds was built on top of it.", B))
 s.append(Paragraph("<i>Edit this to match your own timeline if you rebuild it.</i>", SM))
 
 s.append(Paragraph("6. Write your own presentation script", H2))

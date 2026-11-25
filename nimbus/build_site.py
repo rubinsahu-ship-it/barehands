@@ -18,14 +18,69 @@ if saved:
 
 # ======================= NOTES (orb 0) =======================
 NOTES = {
+"Exam Calendar.md": """# Exam Calendar · Term III
+
+**End-term exams** (3 hours each, 10:00 to 13:00, Exam Hall A)
+- **Mon 7 Dec** · Marketing Management
+- **Tue 8 Dec** · Corporate Finance (formula sheet allowed)
+- **Wed 9 Dec** · Operations Management
+- **Thu 10 Dec** · Business Analytics (lab exam, 14:00)
+- **Fri 11 Dec** · Organisational Behaviour
+- **Sat 12 Dec** · Managerial Economics
+
+**Before the exams**
+- **Mon 30 Nov** · Group project report due (Marketing), 23:59 on the portal
+- **Thu 3 Dec** · Case competition final round
+- **Fri 4 Dec** · Viva: Business Analytics project
+- **Sat 5 Dec** · Last day to collect hall tickets
+
+**Revision plan**
+- **28 Nov to 2 Dec**: one pass of every subject, two subjects a day
+- **3 to 6 Dec**: past papers under a timer, one paper a day
+- **The evening before each exam**: formulas, frameworks, sleep by 23:00
+
+Say "start a 3 hour timer" for a full mock paper.
+""",
+"Weekly Timetable.md": """# Weekly Timetable · Term III
+
+**Monday**
+- 09:30 · Marketing Management · Room 204
+- 11:15 · Corporate Finance · Room 112
+- 15:00 · Placement prep: aptitude · Seminar hall
+
+**Tuesday**
+- 09:30 · Operations Management · Room 204
+- 11:15 · Business Analytics lab · Lab 2
+- 14:30 · Group project: market entry case · Library
+
+**Wednesday**
+- 09:30 · Organisational Behaviour · Room 108
+- 11:15 · Managerial Economics · Room 112
+- 16:00 · Guest talk: industry leader · Auditorium
+
+**Thursday**
+- 09:30 · Corporate Finance · Room 112
+- 11:15 · Marketing Management · Room 204
+- 14:00 · Mock GD session · Seminar hall
+
+**Friday**
+- 09:30 · Business Analytics · Lab 2
+- 11:15 · Operations Management · Room 204
+- 15:00 · Quiz: financial ratios · Room 112
+
+**Saturday**
+- 10:00 · Live project: client call · Online
+- 15:00 · Sports and club activity · Ground
+
+Each lecture is 90 minutes. Say "show my calendar" for today only.
+""",
 "Start Here.md": """# Start Here
 
 Welcome to **NIMBUS**, the PGDM intelligence interface. Made by RUBIN.
 
 **With your hands**
-- **Touch thumb and index tips** on something to grab it, open to drop. The ring around the cursor closes as your fingers close.
-- **Quick touch** on the ring = open the menu. Quick touch on a row = open it.
-- NIMBUS learns your pinch in the first two or three tries. Say "calibrate" to retune it.
+- **Pinch** (index + thumb, other fingers up like an OK sign) on something to grab it, release to drop.
+- **Quick pinch** on the ring = open the menu. Quick pinch on a row or a key = press it.
 - **Flick** while holding = throw it.
 - **Two hands** pinching one card = stretch it bigger.
 - **Pinch the title bar** of a note quickly = close it.
@@ -34,10 +89,10 @@ Welcome to **NIMBUS**, the PGDM intelligence interface. Made by RUBIN.
 - "Show SWOT"
 - "Explain BCG matrix"
 - "Compare SWOT and Porter"
-- "Start a 5 minute timer" / "Start stopwatch" / "Open calculator"
+- "Start a 5 minute timer" / "Start stopwatch"
 - "Quiz me" / "Clear"
 
-**Tools** (tap the ring, then Tools): Timer for presentations and GDs, Stopwatch, Calculator.
+**Tools** (tap the ring, then Tools): Timer for presentations and GDs, Stopwatch.
 
 No camera or mic? Use the mouse, or press Enter to type a command.
 """,
@@ -379,11 +434,10 @@ api.mkdir()
 (api / "config.json").write_text(json.dumps({"name": "NIMBUS", "orbs": [
     {"title": "PGDM Notes", "kind": "notes"}, {"title": "Frameworks", "kind": "media"}, {"title": "Tools", "kind": "tools"}]}))
 # the pane shows a short curated list (every note stays reachable by voice)
-PANE_NOTES = ["Start Here.md", "Strategy/SWOT Analysis.md", "Strategy/Porter's Five Forces.md",
-              "Marketing/STP and the 4Ps.md", "Finance/Financial Statements.md", "Placements/How to Crack a Case.md"]
+PANE_NOTES = ["Exam Calendar.md", "Weekly Timetable.md"]
 tree = {"name": "PGDM Notes", "dirs": [], "notes": [{"title": Path(f).stem, "file": "0/" + f} for f in PANE_NOTES]}
 (api / "tree0.json").write_text(json.dumps(tree))
-PANE_IMGS = ["SWOT Analysis.png", "Porter Five Forces.png", "BCG Matrix.png", "Ansoff Matrix.png", "Marketing Mix 4Ps.png", "Profit Tree.png"]
+PANE_IMGS = ["SWOT Analysis.png", "BCG Matrix.png"]
 (api / "props.json").write_text(json.dumps({"name": "Frameworks", "items": PANE_IMGS, "dirs": []}))
 (api / "orb.json").write_text(json.dumps({"state": "idle", "mood": "green", "wave": None}))
 (api / "state.json").write_text("{}")
@@ -602,16 +656,16 @@ sub('''body: `${p.dirs} folders · ${p.leaves} props`, orb: "props" };''', '''bo
 sub('''body: `${v.dirs} folders · ${v.leaves} notes`, orb: i };''', '''body: `${v.dirs ? v.dirs + " subjects · " : ""}${v.leaves} notes`, orb: i };''')
 # bigger framework images
 sub('max-width:32vw; max-height:44vh;', 'max-width:46vw; max-height:60vh;')
-# ---- TOOLS orb: Timer / Stopwatch / Calculator as grabbable glass cards
+# ---- TOOLS orb: Timer / Stopwatch as grabbable glass cards
 sub('''    if (CFG.orbs[i].kind === "media") continue;''', '''    if (CFG.orbs[i].kind !== "notes") continue;''')
 sub('''  const defs = (CFG.orbs || []).map((o, i) => {
     if (o.kind === "media") {''', '''  const defs = (CFG.orbs || []).map((o, i) => {
     if (o.kind === "tools")
-      return { title: o.title || "Tools", body: "Timer · Stopwatch · Calculator", orb: "tools" };
+      return { title: o.title || "Tools", body: "Timer · Stopwatch", orb: "tools" };
     if (o.kind === "media") {''')
 sub('''    const label = String(kind === "props" ? "Props"''', '''    const label = String(kind === "props" ? "Frameworks" : kind === "tools" ? "Tools"''')
 sub('''  if (b.bkind === "props" && PROPSTREE) walk(PROPSTREE, "", 0, true);''', '''  if (b.bkind === "tools") {
-    [["Timer", "timer"], ["Stopwatch", "stopwatch"], ["Calculator", "calc"]]
+    [["Timer", "timer"], ["Stopwatch", "stopwatch"]]
       .forEach(([t, f]) => out.push({ d: 0, t, k: "widget", f }));
     return out;
   }
@@ -622,55 +676,17 @@ sub('''      } else if (row.k === "prop") {''', '''      } else if (row.k === "w
       } else if (row.k === "prop") {''')
 sub('''        it.x = Math.min(b.x + 480, innerWidth - 240); it.y = b.y;''', '''        { const f = freeSpot(innerWidth * 0.42, innerHeight * 0.52); it.x = f.x; it.y = f.y; }''')
 
-# ---- PINCH ENGINE (nimbus/pinch.js): clicks when the thumb and index tips touch, learns your touch
-# stable hand ids: MediaPipe's result order can swap between frames, which handed one
-# hand's pinch to the other and fired stray clicks
-sub('''      (res.landmarks || []).forEach((lms, i) => {
-        seen.add(i);''', '''      const _slots = nimbusSlots(res);
-      (res.landmarks || []).forEach((lms, _k) => {
-        const i = _slots[_k];
-        seen.add(i);''')
-# cursor: knuckle-anchored + One Euro filtered, frozen while the fingers close
-sub('''        cur.x += (px - cur.x) * 0.45; cur.y += (py - cur.y) * 0.45;''',
-    '''        nimbusTrack(cur, lms, (res.worldLandmarks || [])[_k], px, py, now);''')
-# the click decision: 3D gap, hysteresis, two-frame confirm, re-arm
-sub('''        cur.pinched = handGarbage ? false
-                    : wasPinched ? !relOk
-                                 : ratio < (aspect < 2.0 ? 0.38 : 0.32) &&
-                                   (okNow || cur.okEma > 0.55 || holdingI);''',
-    '''        cur.pinched = nimbusDecide(cur, now, { garbage: handGarbage, holding: holdingI, speed: hspd,
-                      legacyIn: ratio < (aspect < 2.0 ? 0.38 : 0.32), legacyRel: relOk });''')
-# the old probation drop let a closed hand re-click; the strict pinch does not need it
-sub('''          if (cur.badRun >= 4) { cur.pinched = false; cur.probKill = true; }''',
-    '''          /* NIMBUS: probation drop retired (the strict pinch re-arms only on an open hand) */''')
-# a hand that vanishes mid-pinch never taps or throws what it held
-sub('''  if (!cur) return;
-  items.forEach(c => { const k = c.grabbedBy.indexOf(i); if (k >= 0) endGrab(c, i, cur); });''',
-    '''  if (!cur) return;
-  cur.probKill = true; cur.history = []; cur.grabT = -1e9;   // lost hand: no tap, no throw
-  items.forEach(c => { const k = c.grabbedBy.indexOf(i); if (k >= 0) endGrab(c, i, cur); });''')
-# debug readout (D key) shows the new gap and thresholds
-sub('''            `\\npinch ${ratio.toFixed(2)} ${cur.pinched ? "CLOSED" : "open"}` +''',
-    '''            `\\npinch ${(cur.ps && cur.ps.r != null ? cur.ps.r : 0).toFixed(2)} (in<${NimbusPinch.cfg.tIn} out>${NimbusPinch.cfg.tOut}) tip ${cur.pm && cur.pm.tip ? "Y" : "n"} 2d ${ratio.toFixed(2)} ${cur.pinched ? "CLOSED" : "open"}` +''')
-# tools: a pinch ON a key presses it the moment the fingers touch (one press per pinch);
-# anywhere else on the card carries it. No 3D-rotate latch, no throwing a keypad.
-sub('''    } else if (c.type === "widget") {
-      // the ring: carried like a card; a quick tap blooms the orbs''', '''    } else if (c.type === "tool") {
-      c.tapX = cur.x; c.tapY = cur.y;
-      c.holdX = cur.x; c.holdY = cur.y; c.holdT = performance.now();
-      c.mode = toolTap(c, cur) ? "press" : "move";
-    } else if (c.type === "widget") {
-      // the ring: carried like a card; a quick tap blooms the orbs''')
-sub('''              c.mode === "pinned") {
-            /* spin, not toss''', '''              c.mode === "pinned" || c.mode === "press") {
-            /* spin, not toss''')
+# ---- HANDS: the original barehands tracking, pinch and gestures run UNCHANGED.
+# Only additions for the NIMBUS cards: a quick pinch-tap on a timer / stopwatch / day-card key
+# presses it, with the same tap test the original uses for menu rows (released within 350 ms,
+# moved under 24 px); and these cards never latch into 3D rotate.
+sub('''    // PHASE 2 quick-tap releases: the RING toggles its orbital bloom;''', '''    if (c.type === "tool" && !cur.probKill) {
+      const kMs = performance.now() - (cur.grabT || 0);
+      const kTr = Math.hypot(cur.x - (c.tapX ?? cur.x), cur.y - (c.tapY ?? cur.y));
+      if (kMs < 350 && kTr < 24) toolTap(c, { x: c.tapX ?? cur.x, y: c.tapY ?? cur.y });
+    }
+    // PHASE 2 quick-tap releases: the RING toggles its orbital bloom;''')
 sub('''if (mp >= 1) {               // LATCHED: 3D rotate''', '''if (mp >= 1 && held.type !== "tool") {               // LATCHED: 3D rotate''')
-# a careful, deliberate pinch takes longer than a flick: wider tap windows
-sub('''if (bMs < 350 && bTrav < 24) browserTap(c, cur);''', '''if (bMs < 700 && bTrav < 30) browserTap(c, cur);''')
-sub('''if (gMs < 350 && gTrav < 24) killItem(c);''', '''if (gMs < 600 && gTrav < 30) killItem(c);''')
-sub('''if (tMs < 300 && tTrav < 26) openPanel(c);''', '''if (tMs < 600 && tTrav < 30) openPanel(c);''')
-sub('''if (xMs < 300 && xTrav < 26) killItem(c);''', '''if (xMs < 450 && xTrav < 26) killItem(c);''')
-sub('''if (qMs < 350 && qTr < 24) {''', '''if (qMs < 700 && qTr < 30) {''')
 # the mouse cursor (id 9) is not a camera hand: never drop it for being unseen
 sub('Object.keys(cursors).map(Number).forEach(i => { if (!seen.has(i)) dropCursor(i); });',
     'Object.keys(cursors).map(Number).forEach(i => { if (!seen.has(i) && i !== 9) dropCursor(i); });')
@@ -680,9 +696,10 @@ sub("<title>barehands</title>", "<title>NIMBUS | PGDM Intelligence</title>")
 sub('''<div id="boot">BAREHANDS<br><span style="color:#a8d8cf;font-size:12px;letter-spacing:0.22em">by jaredrhod</span><br>''',
     '''<div id="boot">NIMBUS<br><span style="color:#aab0e0;font-size:12px;letter-spacing:0.22em">PGDM INTELLIGENCE INTERFACE</span><br>''')
 sub('toast("barehands v1.0", 2000);', 'toast("NIMBUS online", 2000);')
+sub('x: innerWidth * 0.30, y: innerHeight * 0.45, scale: 1,', 'x: innerWidth * 0.26, y: innerHeight * 0.47, scale: 0.76,')
 import re
 html, n = re.subn(r'<div id="hint">.*?</div>',
-    '<div id="hint">Touch thumb to index = click &nbsp;·&nbsp; Touch the ring = menu &nbsp;·&nbsp; Say <b>"show SWOT"</b> or <b>"start a 5 minute timer"</b> &nbsp;·&nbsp; Enter = type a command</div>', html, count=1, flags=re.S)
+    '<div id="hint">Pinch = grab &nbsp;·&nbsp; Quick pinch the ring = menu &nbsp;·&nbsp; <b>V</b> = voice on/off &nbsp;·&nbsp; <b>Enter</b> = type a command</div>', html, count=1, flags=re.S)
 assert n == 1
 
 # expose a small API + mouse backup, inside the module scope
@@ -712,7 +729,7 @@ window.BH = {
   ready() { return !!landmarker; },
 };
 
-// ---- TOOLS: Timer, Stopwatch, Calculator. Glass cards with big tap keys;
+// ---- TOOLS: Timer, Stopwatch. Glass cards with big tap keys;
 // pinch-drag moves them, a quick pinch on a key presses it.
 const DAYK = { routine: 1, calendar: 1, plan: 1 };
 const TOOL_DEF = {
@@ -727,11 +744,6 @@ const TOOL_DEF = {
     `<div class="tdisp">00:00.0</div><div class="tsub tlaps">&nbsp;</div>
      <div class="tkeys k3"><b data-a="go" class="tgo">Start</b><b data-a="lap">Lap</b><b data-a="rs">Reset</b></div>
      <div class="tkeys k1"><b data-a="x" class="tx">Close</b></div>` },
-  calc: { title: "Calculator", body:
-    `<div class="tdisp tcalc">0</div><div class="tsub texpr">&nbsp;</div>
-     <div class="tkeys k4">${["C","(",")","÷","7","8","9","×","4","5","6","−","1","2","3","+","0",".","%","="]
-       .map(k => `<b data-a="k${k}"${k === "=" ? ' class="tgo"' : ""}>${k}</b>`).join("")}</div>
-     <div class="tkeys k2"><b data-a="bk">⌫</b><b data-a="x" class="tx">Close</b></div>` },
 };
 function openTool(kind, opts = {}) {
   const d = TOOL_DEF[kind]; if (!d) return null;
@@ -777,10 +789,6 @@ function toolDraw(t) {
     q(".tdisp").textContent = fmt(s.acc + (s.run ? now - s.t0 : 0), true);
     q(".tgo").textContent = s.run ? "Pause" : "Start";
     q(".tlaps").innerHTML = s.laps.length ? s.laps.slice(-3).map((l, i, a) => `L${s.laps.length - a.length + i + 1} ${fmt(l, true)}`).join(" · ") : "&nbsp;";
-  } else if (t.tool === "calc") {
-    q(".texpr").innerHTML = s.res !== "" ? escT(s.expr) + " =" : "&nbsp;";
-    const v = s.res !== "" ? s.res : (s.expr || "0");
-    q(".tcalc").textContent = v; q(".tcalc").style.fontSize = v.length > 12 ? "38px" : v.length > 8 ? "52px" : "";
   }
 }
 function toolAct(t, a, arg) {
@@ -802,36 +810,30 @@ function toolAct(t, a, arg) {
     }
     else if (a === "lap") s.laps.push(s.acc + (s.run ? now - s.t0 : 0));
     else if (a === "rs") { s.run = false; s.acc = 0; s.laps = []; }
-  } else if (t.tool === "calc") {
-    if (a === "bk") { if (s.res !== "") { s.res = ""; } s.expr = s.expr.slice(0, -1); }
-    else if (a === "set") { s.expr = arg; s.res = ""; toolAct(t, "k="); return; }
-    else if (a === "kC") { s.expr = ""; s.res = ""; }
-    else if (a === "k=") {
-      const js = s.expr.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/(\d+(?:\.\d+)?)%/g, "($1/100)");
-      try {
-        if (!/^[0-9+\-*/().\s]+$/.test(js)) throw 0;
-        const v = Function('"use strict";return (' + js + ")")();
-        s.res = Number.isFinite(v) ? String(+v.toFixed(8)) : "Error";
-      } catch (e) { s.res = "Error"; }
-    } else if (a[0] === "k") {
-      if (s.res !== "") { s.expr = /[0-9.(]/.test(a.slice(1)) || s.res === "Error" ? "" : s.res; s.res = ""; }
-      if (s.expr.length < 40) s.expr += a.slice(1);
-    }
   }
   toolDraw(t);
 }
+// distance from a point to a key's box (0 = inside)
+function keyDist(b, x, y) {
+  const r = b.getBoundingClientRect();
+  return Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+}
+function nearestKey(keys, x, y, max) {
+  let best = null, bd = max;
+  for (const b of keys) { const d = keyDist(b, x, y); if (d <= bd) { bd = d; best = b; } }
+  return best;
+}
 function toolTap(t, cur) {
-  for (const b of t.el.querySelectorAll("[data-a]")) {
-    const r = b.getBoundingClientRect();
-    if (cur.x >= r.left - 4 && cur.x <= r.right + 4 && cur.y >= r.top - 4 && cur.y <= r.bottom + 4) {
-      b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit");
-      const a = b.dataset.a;
-      if (window.NimbusSFX) NimbusSFX.key([...t.el.querySelectorAll("[data-a]")].indexOf(b));
-      if (a === "x") setTimeout(() => toolAct(t, a), 0); else toolAct(t, a);
-      return true;
-    }
-  }
-  return false;
+  const keys = [...t.el.querySelectorAll("[data-a]")];
+  // what you saw lit up while aiming is what gets pressed; otherwise the key at / nearest the cursor
+  let b = cur.hovKey && keys.includes(cur.hovKey) && performance.now() - (cur.hovT || 0) < 450 ? cur.hovKey : null;
+  if (!b) b = nearestKey(keys, cur.x, cur.y, 34);
+  if (!b) return false;
+  b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit");
+  const a = b.dataset.a;
+  if (window.NimbusSFX) NimbusSFX.key(keys.indexOf(b));
+  if (a === "x") setTimeout(() => toolAct(t, a), 0); else toolAct(t, a);
+  return true;
 }
 setInterval(() => items.forEach(i => { if (i.type === "tool" && i.el.isConnected) toolDraw(i); }), 100);
 BH.openTool = (kind, opts) => openTool(kind, opts || {});
@@ -849,70 +851,26 @@ BH.ringTo = (fx, fy, sc) => {
 BH.tool = (kind, a, arg) => { const t = openTool(kind); if (t) toolAct(t, a, arg); return t; };
 BH.closeTool = (kind) => items.filter(i => i.type === "tool" && i.tool === kind).forEach(killItem);
 
-// ---- STRICT PINCH glue: pinch.js (window.NimbusPinch) does the maths, this wires it in
-function nimbusSlots(res) {
-  const L = res.landmarks || [], out = [];
-  if (!L.length) return out;
-  const pos = L.map(l => toScreen(l[9]));
-  const near = (id, k) => { const c = cursors[id]; return c && c.ax != null ? Math.hypot(c.ax - pos[k].x, c.ay - pos[k].y) : 1e6; };
-  if (L.length === 1) {
-    const d0 = near(0, 0), d1 = near(1, 0);
-    if (Math.min(d0, d1) < innerWidth * 0.3) out[0] = d0 <= d1 ? 0 : 1;
-    else out[0] = !cursors[0] ? 0 : !cursors[1] ? 1 : (d0 <= d1 ? 0 : 1);
-  } else {
-    const keep = near(0, 0) + near(1, 1), swap = near(1, 0) + near(0, 1);
-    out[0] = swap < keep ? 1 : 0; out[1] = 1 - out[0];
-    for (let k = 2; k < L.length; k++) out[k] = k;
-  }
-  return out;
-}
-function nimbusTrack(cur, lms, wl, px, py, now) {
-  const P = window.NimbusPinch;
-  if (!P) { cur.x += (px - cur.x) * 0.45; cur.y += (py - cur.y) * 0.45; return; }
-  const st = cur.ps || (cur.ps = {});
-  const m = P.metrics(lms, wl, cam.videoWidth || 1280, cam.videoHeight || 720);
-  cur.pm = m; cur.seenT = now;
-  const a5 = toScreen(lms[5]), a9 = toScreen(lms[9]);
-  cur.ax = a9.x; cur.ay = a9.y;
-  const c = P.cursor(st, { x: (a5.x + a9.x) / 2, y: (a5.y + a9.y) / 2 }, { x: px, y: py }, m.r, now);
-  cur.x = c.x; cur.y = c.y;
-  if (!cur.pmEl) { cur.pmEl = document.createElement("i"); cur.pmEl.className = "pm"; cur.el.appendChild(cur.pmEl); }
-  const k = P.meter(st.r != null ? st.r : m.r);
-  cur.pmEl.style.setProperty("--k", k.toFixed(3));
-  cur.el.classList.toggle("near", k > 0.8);
-}
-function nimbusDecide(cur, now, ctx) {
-  const P = window.NimbusPinch;
-  if (!P || !cur.pm) return ctx.garbage ? false : cur.pinched ? !ctx.legacyRel : ctx.legacyIn;
-  if (P.calibrating) ctx.garbage = true;          // calibrating: fingers move, nothing clicks
-  const out = P.step(cur.ps, cur.pm, now, ctx);
-  if (out.onset) {
-    if (window.NimbusSFX) NimbusSFX.click();
-    cur.el.classList.remove("click"); void cur.el.offsetWidth; cur.el.classList.add("click");
-    clearTimeout(cur.clickT); cur.clickT = setTimeout(() => cur.el.classList.remove("click"), 400);
-  }
-  return out.pinched;
-}
 // what a pinch would press right now: the key / row under each open hand lights up
 setInterval(() => {
   document.querySelectorAll(".hov").forEach(e => e.classList.remove("hov"));
   const hs = [0, 1].map(k => cursors[k]).filter(c => c && !c.pinched && c.el.isConnected);
   if (!hs.length) return;
-  for (const it of items) {
-    if (!it.el.isConnected || (it.anim && it.anim.k === "out")) continue;
-    const sel = it.type === "tool" ? "[data-a]" : it.type === "browser" ? ".brow" : null;
-    if (!sel) continue;
-    for (const b of it.el.querySelectorAll(sel)) {
-      const r = b.getBoundingClientRect();
-      if (hs.some(c => c.x >= r.left && c.x <= r.right && c.y >= r.top && c.y <= r.bottom)) b.classList.add("hov");
-    }
+  for (const c of hs) {
+    // the top card under this hand; on a tool card, light the ONE key a pinch would press (magnetic: the nearest within 34 px)
+    const it = hitTest(c);
+    if (!it || (it.anim && it.anim.k === "out")) { c.hovKey = null; continue; }
+    if (it.type === "tool") {
+      const k = nearestKey([...it.el.querySelectorAll("[data-a]")], c.x, c.y, 34);
+      c.hovKey = k; c.hovT = performance.now();
+      if (k) k.classList.add("hov");
+    } else if (it.type === "browser") {
+      c.hovKey = null;
+      for (const b of it.el.querySelectorAll(".brow")) { const r = b.getBoundingClientRect();
+        if (c.x >= r.left && c.x <= r.right && c.y >= r.top && c.y <= r.bottom) b.classList.add("hov"); }
+    } else c.hovKey = null;
   }
-}, 60);
-BH.pinchProbe = () => {
-  const now = performance.now();
-  const hs = [0, 1].map(k => cursors[k]).filter(c => c && c.ps && c.ps.r != null && now - (c.seenT || 0) < 300);
-  return hs.length ? { r: hs[0].ps.r, tip: !!(hs[0].pm && hs[0].pm.tip), hands: hs.length } : null;
-};
+}, 50);
 
 // ---- MOUSE BACKUP: click = tap, drag = move/scroll, wheel = scroll
 (() => {
@@ -961,9 +919,9 @@ i = html.rfind("</script>")
 html = html[:i] + BH_JS + html[i:]
 
 badge = ('<div class="nb-badge">Made by <b>RUBIN</b>'
-         '<span> · built on barehands by Jared Rhodenizer</span></div>')
+         '</div>')
 sub("<body>", "<body>" + badge)
-sub("</head>", '<script src="/pinch.js"></script>\n<link rel="stylesheet" href="/nimbus.css">\n'
+sub("</head>", '<link rel="stylesheet" href="/nimbus.css">\n'
     '<script>if (/[?&]raftest/.test(location.search)) window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 16);</script>\n</head>')
 j = html.rfind("</body>")
 html = html[:j] + '<script src="/nimbus.js"></script>\n' + html[j:]
@@ -999,7 +957,6 @@ html = re.sub(r"#([0-9a-fA-F]{6})\b", lambda m: "#%02x%02x%02x" % _remap(*(int(m
 
 shutil.copy(ROOT / "ui" / "nimbus.js", SITE / "nimbus.js")
 shutil.copy(ROOT / "ui" / "nimbus.css", SITE / "nimbus.css")
-shutil.copy(ROOT / "ui" / "pinch.js", SITE / "pinch.js")
 (SITE / "_redirects").write_text("/stage.html /index.html 200\n")
 (SITE / "_headers").write_text("/*\n  Permissions-Policy: camera=(self), microphone=(self)\n")
 (SITE / "LICENSE").write_text((REPO / "LICENSE").read_text())
