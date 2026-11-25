@@ -48,21 +48,22 @@ s = []
 
 s += [Paragraph("NIMBUS - PGDM Intelligence Interface", H1),
       Paragraph("A hands-free study assistant for PGDM students: control notes, framework images and study tools with your bare hands "
-                "through a webcam, or by voice. Made by <b>RUBIN</b>.", B),
-      Paragraph("Live app: <b>barehands.netlify.app</b> &nbsp;|&nbsp; Use Chrome, click WAKE NIMBUS, allow the camera and microphone", SM)]
+                "through a webcam, or by typing a command. Made by <b>RUBIN</b>.", B),
+      Paragraph("Live app: <b>barehands.netlify.app</b> &nbsp;|&nbsp; Use Chrome, click WAKE NIMBUS, allow the camera", SM)]
 
 s.append(Paragraph("1. Project name", H2))
 s.append(Paragraph("<b>NIMBUS</b> (PGDM Intelligence Interface): a webcam-based assistant where notes, framework images, a timer, "
                    "a stopwatch and your day plan float on screen as glass cards. You pinch, throw and stretch them with your hands, "
-                   "or just speak a command. No headset, controllers or gloves. Made by RUBIN for PGDM students.", B))
+                   "or type a command. No headset, controllers or gloves. Made by RUBIN for PGDM students.", B))
 
 s.append(Paragraph("2. Benefits", H2))
 s += bullets([
     "<b>Learn by handling ideas:</b> pull SWOT, Porter's Five Forces, BCG or Ansoff onto the board and arrange them side by side.",
-    "<b>Ready-made PGDM content:</b> the exam calendar and weekly timetable, study notes and framework images (SWOT, BCG and more by voice).",
-    "<b>Voice commands:</b> \"show SWOT\", \"explain BCG matrix\", \"compare SWOT and Porter\", \"quiz me\"; it answers out loud. Voice starts off: press V to turn it on.",
-    "<b>Study tools:</b> a timer for presentations and group discussions and a stopwatch with laps (also by voice: \"start a 5 minute timer\").",
-    "<b>Morning briefing:</b> say \"all systems online\" and NIMBUS lays out your routine, today's calendar and a planned day, which you tick off by hand.",
+    "<b>Ready-made PGDM content:</b> the exam calendar and weekly timetable, study notes and framework images (SWOT, BCG and more by typing).",
+    "<b>Typed commands:</b> press Enter and type \"show SWOT\", \"explain BCG matrix\", \"compare SWOT and Porter\" or \"quiz me\"; the answer appears on screen.",
+    "<b>NIMBUS Memory:</b> upload images, PDFs and notes from the Memory button (top right) or drop them anywhere. They open as cards from the ring's Memory circle, and stay saved on that laptop's browser.",
+    "<b>Study tools:</b> a timer for presentations and group discussions and a stopwatch with laps (also typed: \"start a 5 minute timer\").",
+    "<b>Morning briefing:</b> type \"all systems online\" and NIMBUS lays out your routine, today's calendar and a planned day, which you tick off by hand.",
     "<b>Always works:</b> if there is no camera or mic, the mouse and typed commands (press Enter) do everything.",
     "<b>Free and online:</b> runs in Chrome from one link, with no sign-up or API keys.",
 ])
@@ -70,14 +71,15 @@ s += bullets([
 s.append(Paragraph("3. How it works", H2))
 s.append(table([
     ["Step", "What happens"],
-    ["1. Wake", "A wake screen with the NIMBUS halo and a sound swell. Clicking WAKE NIMBUS starts the camera, the microphone and the voice."],
+    ["1. Wake", "A wake screen with the NIMBUS halo and a sound swell. Clicking WAKE NIMBUS starts the camera and hand tracking."],
     ["2. Camera", "The browser asks for webcam access. Video stays on your device; it is not uploaded."],
     ["3. Hand tracking", "Google MediaPipe finds 21 points on each hand in every frame, right in the browser."],
     ["4. Gestures", "Pinch (index and thumb, other fingers up) to grab, move to drag, "
                     "spread two hands to stretch, flick to throw. A quick pinch on the ring, a menu row or a card key presses it."],
     ["5. The ring and menu", "Tap the NIMBUS ring and three orbs bloom: <b>PGDM Notes</b>, <b>Frameworks</b> and <b>Tools</b>. Only one menu pane is open at a time."],
     ["6. Cards", "Pick a row and it opens as a glass card in a free spot. Cards you place stay put until you close them."],
-    ["7. Voice", "The browser listens for commands such as \"show SWOT\" or \"start a 5 minute timer\", acts on them, and replies with a short spoken line. The ring shows LISTENING, THINKING or SPEAKING."],
+    ["7. Commands and Memory", "Press Enter and type a command such as \"show SWOT\" or \"start a 5 minute timer\"; the reply appears on screen. "
+                               "Files you upload to Memory are stored in the browser (IndexedDB) and open as glass cards."],
     ["8. Rendering", "three.js and CSS draw the glass cards, the HUD and effects over the live camera picture."],
 ], [32 * mm, W - 32 * mm]))
 s.append(Spacer(1, 4))
@@ -89,7 +91,7 @@ s.append(Paragraph("4. Technology used", H2))
 s.append(table([
     ["Tool / service", "What it does in this project"],
     ["HTML, CSS, JavaScript", "The whole board is one web page: layout, glass look, gestures, cards, the HUD and the tools."],
-    ["Web Speech API", "Speech recognition for voice commands and speech synthesis for the spoken replies, built into Chrome. Free, no keys."],
+    ["IndexedDB", "Browser storage for NIMBUS Memory: uploads stay on the device, survive reloads and work offline."],
     ["Web Audio API", "The NIMBUS sound set (wake swell, glass clicks, bells, timer chime) is synthesised live in the browser; no audio files."],
     ["Google MediaPipe", "Hand tracking from the webcam (21 points per hand, in the image and in 3D), loaded from a CDN when the page opens."],
     ["three.js", "3D and glass rendering for cards, holograms and effects."],
@@ -106,13 +108,13 @@ s.append(table([
     ["Code repository", "github.com/rubinsahu-ship-it/barehands"],
     ["Licence", "The hand-tracking board is open source (AGPL-3.0). Keep the LICENSE file if you reuse the code."],
     ["Live link", "https://barehands.netlify.app"],
-    ["API keys", "None. Hand tracking, voice and hosting all run without API keys, accounts or paid services."],
+    ["API keys", "None. Hand tracking, memory and hosting all run without API keys, accounts or paid services."],
     ["Run it on your computer", "Clone the repo, run <b>python3 server.py</b>, then open http://127.0.0.1:8794/stage.html in Chrome."],
 ], [38 * mm, W - 38 * mm]))
 
 s.append(Paragraph("5. Time taken", H2))
 s.append(Paragraph("About <b>4 days</b> of build time (21 to 24 November 2026): setting up the open-source hand-tracking board, hosting it on Netlify, "
-                   "branding it as NIMBUS, writing the PGDM notes, generating the framework images, adding the boot screen, HUD, voice commands, "
+                   "branding it as NIMBUS, writing the PGDM notes, generating the framework images, adding the boot screen, HUD, typed commands, Memory uploads, "
                    "quiz, timer, stopwatch, morning briefing, and testing and fixing glitches. Hand tracking runs on the open-source board; "
                    "everything NIMBUS adds was built on top of it.", B))
 s.append(Paragraph("<i>Edit this to match your own timeline if you rebuild it.</i>", SM))
@@ -124,15 +126,15 @@ s.append(table([
     ["Time (adjust)", "Section", "Ideas to cover"],
     ["0:00 - 0:45", "Introduction", "Who you are, the problem (PGDM study is passive and scattered), and your one-line pitch. Click WAKE NIMBUS for the boot moment."],
     ["0:45 - 2:15", "Live demo: hands", "Tap the ring, open Frameworks, pull SWOT and BCG out and arrange them. Throw one, stretch one with two hands."],
-    ["2:15 - 3:30", "Live demo: voice and tools", "Say \"compare SWOT and Porter\", \"start a 5 minute timer\" and \"quiz me\". Show how it helps in GDs and exam prep."],
-    ["3:30 - 4:30", "How it works", "Camera, MediaPipe hand tracking, Web Speech voice, three.js, hosted on Netlify. Keep it to three sentences."],
+    ["2:15 - 3:30", "Live demo: commands, tools, Memory", "Type \"all systems online\" and \"start a 5 minute timer\". Upload a file to Memory and pull it up by hand. Show how it helps in GDs and exam prep."],
+    ["3:30 - 4:30", "How it works", "Camera, MediaPipe hand tracking, browser storage for Memory, three.js, hosted on Netlify. Keep it to three sentences."],
     ["4:30 - 5:00", "Close", "The benefit in one line, the live link, thanks."],
 ], [28 * mm, 38 * mm, W - 66 * mm]))
 s.append(Spacer(1, 6))
 s.append(Paragraph("<b>Before you present:</b>", B))
 s += bullets([
-    "Open the live link in Chrome ahead of time, click WAKE NIMBUS, and allow the camera and microphone. Good lighting and a plain background help the tracking.",
-    "In a noisy hall, voice may mishear: press Enter and type the command instead, or use the mouse.",
+    "Open the live link in Chrome ahead of time, click WAKE NIMBUS, and allow the camera. Good lighting and a plain background help the tracking.",
+    "Upload the files you want to show to Memory before you present, on the laptop you'll present from.",
     "Practise each gesture once so the demo looks smooth.",
     "Have a backup: keep screenshots or a short screen recording in case the camera or internet fails.",
     "Rehearse with a timer and cut anything that runs over your slot.",

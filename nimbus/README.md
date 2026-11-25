@@ -5,7 +5,7 @@ Made by RUBIN. Built on [barehands](https://github.com/jaredrhod/barehands) by J
 Live: https://barehands.netlify.app (Chrome, click **Wake Nimbus**, allow camera and microphone).
 
 NIMBUS turns the barehands board into a study assistant for PGDM students: PGDM notes,
-framework images, timer and stopwatch you control with your hands or voice, plus a
+framework images, timer and stopwatch you control with your hands or typed commands, plus a
 morning briefing ("Hey Nimbus, all systems online") with your routine, calendar and day plan.
 
 ## Folder
@@ -13,7 +13,7 @@ morning briefing ("Hey Nimbus, all systems online") with your routine, calendar 
 | Path | What it is |
 |---|---|
 | `build_site.py` | Builds the static site into `site/` from the repo's `stage.html` (patches it at build time; `stage.html` itself is not changed). Needs Python 3 + Pillow. |
-| `ui/nimbus.js`, `ui/nimbus.css` | The NIMBUS layer (design, voice and cards only; hand tracking, pinch and gestures are the original barehands code, unchanged): wake screen, HUD, sound set, voice, briefing, routine / calendar / plan, quiz. Voice starts off; press V to turn it on. |
+| `ui/nimbus.js`, `ui/nimbus.css` | The NIMBUS layer (design, commands and cards only; hand tracking, pinch and gestures are the original barehands code, unchanged): wake screen, HUD, sound set, typed commands (Enter), NIMBUS Memory uploads (IndexedDB), briefing, routine / calendar / plan, quiz. |
 | `site/` | The built site, as deployed to Netlify. |
 | `make_pdf.py`, `NIMBUS_PGDM_Project_Details.pdf` | Project details PDF for students (needs reportlab). |
 

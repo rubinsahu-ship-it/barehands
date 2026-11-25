@@ -432,7 +432,7 @@ def walk_notes(d, idx, root):
 api = SITE / "api"
 api.mkdir()
 (api / "config.json").write_text(json.dumps({"name": "NIMBUS", "orbs": [
-    {"title": "PGDM Notes", "kind": "notes"}, {"title": "Frameworks", "kind": "media"}, {"title": "Tools", "kind": "tools"}]}))
+    {"title": "PGDM Notes", "kind": "notes"}, {"title": "Frameworks", "kind": "media"}, {"title": "Tools", "kind": "tools"}, {"title": "Memory", "kind": "memory"}]}))
 # the pane shows a short curated list (every note stays reachable by voice)
 PANE_NOTES = ["Exam Calendar.md", "Weekly Timetable.md"]
 tree = {"name": "PGDM Notes", "dirs": [], "notes": [{"title": Path(f).stem, "file": "0/" + f} for f in PANE_NOTES]}
@@ -456,7 +456,8 @@ def sub(old, new, count=1):
 sub('fetch("/config")', 'fetch("/api/config.json")')
 sub('fetch("/tree?orb=" + i)', 'fetch("/api/tree" + i + ".json")')
 sub('fetch("/props")', 'fetch("/api/props.json")')
-sub('fetch("/note?f=" + encodeURIComponent(card.def.file))', 'fetch("/api/note/" + encodeURI(card.def.file))')
+sub('    const r = await fetch("/note?f=" + encodeURIComponent(card.def.file));',
+    '    const r = card.def.text != null ? { ok: true, text: async () => card.def.text } : await fetch("/api/note/" + encodeURI(card.def.file));')
 sub('fetch("/note?f=" + encodeURIComponent(it.file))', 'fetch("/api/note/" + encodeURI(it.file))')
 sub('fetch("/state", { cache: "no-store" })', 'fetch("/api/state.json", { cache: "no-store" })')
 # no server: stop the 8x/second ring poll and the 45x/second state POST (NIMBUS drives the ring)
@@ -465,6 +466,7 @@ sub('''    const r = await fetch("/orb", { cache: "no-store" });
 sub('''  fetch("/state", { method: "POST", body: JSON.stringify(st) })
     .then(r => r.json()).then(applyCmds).catch(() => {});''', '''  void st;   /* static build: no render page to feed */''')
 # foley sounds on by default (?sound=0 mutes)
+sub('''const ICO = { dir0: "▸", dir1: "▾", note: "▤", prop: "▦", widget: "▣" };''', '''const ICO = { dir0: "▸", dir1: "▾", note: "▤", prop: "▦", widget: "▣", mem: "◆", memnone: "·" };''')
 sub('const SOUND = Q.get("sound") === "1";', 'const SOUND = Q.get("sound") !== "0";')
 
 # ---- NIMBUS LOOK + SOUND for the board itself ----
@@ -662,15 +664,28 @@ sub('''  const defs = (CFG.orbs || []).map((o, i) => {
     if (o.kind === "media") {''', '''  const defs = (CFG.orbs || []).map((o, i) => {
     if (o.kind === "tools")
       return { title: o.title || "Tools", body: "Timer · Stopwatch", orb: "tools" };
+    if (o.kind === "memory") {
+      const n = window.NimbusMemory ? NimbusMemory.count() : 0;
+      return { title: o.title || "Memory", body: n + (n === 1 ? " upload" : " uploads"), orb: "memory" };
+    }
     if (o.kind === "media") {''')
-sub('''    const label = String(kind === "props" ? "Props"''', '''    const label = String(kind === "props" ? "Frameworks" : kind === "tools" ? "Tools"''')
-sub('''  if (b.bkind === "props" && PROPSTREE) walk(PROPSTREE, "", 0, true);''', '''  if (b.bkind === "tools") {
+sub('''    const label = String(kind === "props" ? "Props"''', '''    const label = String(kind === "props" ? "Frameworks" : kind === "tools" ? "Tools" : kind === "memory" ? "Memory"''')
+sub('''  if (b.bkind === "props" && PROPSTREE) walk(PROPSTREE, "", 0, true);''', '''  if (b.bkind === "memory") {
+    const m = window.NimbusMemory ? NimbusMemory.list() : [];
+    m.forEach(x => out.push({ d: 0, t: x.name.replace(/\.[a-z0-9]+$/i, ""), k: "mem", f: x.id }));
+    if (!m.length) out.push({ d: 0, t: "Empty: use Memory, top right", k: "memnone", f: "" });
+    return out;
+  }
+  if (b.bkind === "tools") {
     [["Timer", "timer"], ["Stopwatch", "stopwatch"]]
       .forEach(([t, f]) => out.push({ d: 0, t, k: "widget", f }));
     return out;
   }
   if (b.bkind === "props" && PROPSTREE) walk(PROPSTREE, "", 0, true);''')
-sub('''      } else if (row.k === "prop") {''', '''      } else if (row.k === "widget") {
+sub('''      } else if (row.k === "prop") {''', '''      } else if (row.k === "mem") {
+        if (window.NimbusMemory) NimbusMemory.show(row.f);
+        killItem(b);
+      } else if (row.k === "widget") {
         openTool(row.f);
         killItem(b);
       } else if (row.k === "prop") {''')
@@ -699,7 +714,7 @@ sub('toast("barehands v1.0", 2000);', 'toast("NIMBUS online", 2000);')
 sub('x: innerWidth * 0.30, y: innerHeight * 0.45, scale: 1,', 'x: innerWidth * 0.26, y: innerHeight * 0.47, scale: 0.76,')
 import re
 html, n = re.subn(r'<div id="hint">.*?</div>',
-    '<div id="hint">Pinch = grab &nbsp;·&nbsp; Quick pinch the ring = menu &nbsp;·&nbsp; <b>V</b> = voice on/off &nbsp;·&nbsp; <b>Enter</b> = type a command</div>', html, count=1, flags=re.S)
+    '<div id="hint">Pinch = grab &nbsp;·&nbsp; Quick pinch the ring = menu &nbsp;·&nbsp; <b>Memory</b> (top right) = your uploads &nbsp;·&nbsp; <b>Enter</b> = type a command</div>', html, count=1, flags=re.S)
 assert n == 1
 
 # expose a small API + mouse backup, inside the module scope
@@ -718,6 +733,19 @@ window.BH = {
     it.anim = { k: "in", t: 0 }; it.el.style.opacity = "0.05";
     items.push(it); return it;
   },
+  openImage(src, title) {
+    items.filter(i => i.type === "browser").forEach(killItem);
+    const it = makeImage(src, title);
+    const f = freeSpot(innerWidth * 0.42, innerHeight * 0.52);
+    it.x = f.x; it.y = f.y; it.anim = { k: "in", t: 0 }; it.el.style.opacity = "0.05";
+    items.push(it); return it;
+  },
+  openText(title, text) { return openPanel({ def: { file: "memory/" + title, title, text: String(text).slice(0, 20000), voice: true } }); },
+  openDoc(src, title) {
+    const t = openTool("doc"); if (!t) return null;
+    t.src = src; t.el.querySelector(".tbar").textContent = title; t.el.querySelector(".tdoc").src = src + "#toolbar=0&view=FitH";
+    return t;
+  },
   closeAll() { items.filter(i => !(i.type === "widget" && i.def && i.def.w === "ring")).forEach(killItem); },
   toggleMenu() {
     const r = items.find(i => i.type === "widget" && i.def && i.def.w === "ring");
@@ -733,6 +761,7 @@ window.BH = {
 // pinch-drag moves them, a quick pinch on a key presses it.
 const DAYK = { routine: 1, calendar: 1, plan: 1 };
 const TOOL_DEF = {
+  doc: { title: "Document", body: `<iframe class="tdoc" title="document"></iframe><div class="tkeys k2"><b data-a="full">Open full</b><b data-a="x" class="tx">Close</b></div>` },
   routine: { title: "Daily Routine", body: `<div class="dlist"></div><div class="tkeys k1"><b data-a="x" class="tx">Close</b></div>` },
   calendar: { title: "Today's Calendar", body: `<div class="dlist"></div><div class="tkeys k1"><b data-a="x" class="tx">Close</b></div>` },
   plan: { title: "Day Plan", body: `<div class="dlist"></div><div class="tkeys k2"><b data-a="replan" class="tgo">Replan</b><b data-a="x" class="tx">Close</b></div>` },
@@ -795,6 +824,7 @@ function toolAct(t, a, arg) {
   const s = t.st, now = performance.now();
   if (a === "x") { killItem(t); return; }
   if (DAYK[t.tool]) { if (window.NimbusDay) NimbusDay.act(t.tool, a); toolDraw(t); return; }
+  if (t.tool === "doc") { if (a === "full" && t.src) window.open(t.src, "_blank"); return; }
   if (t.tool === "timer") {
     const left = s.run ? s.end - now : s.left;
     if (a[0] === "m") { s.left = Math.max(0, left) + 60000 * (+a.slice(1)); if (s.run) s.end = now + s.left; }

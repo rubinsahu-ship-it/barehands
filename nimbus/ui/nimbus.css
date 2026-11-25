@@ -262,3 +262,57 @@ body { background: var(--nb-night) !important; font-family: var(--nb-sans) !impo
 .card.tool.tool-routine .drow { min-height: 50px; }
 .nb-chip.nb-click { pointer-events: auto; cursor: pointer; }
 .nb-chip.nb-click:hover { background: rgba(183, 148, 255, .22); color: #fff; }
+
+/* ---------- NIMBUS Memory ---------- */
+.nb-right { display: flex; align-items: center; gap: 10px; }
+.nb-membtn { pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 9px; padding: 8px 10px 8px 16px; border-radius: 30px;
+  font: 600 13px var(--nb-sans); letter-spacing: .08em; color: #fff; border: 1px solid transparent;
+  background: linear-gradient(rgba(30, 26, 76, .78), rgba(30, 26, 76, .78)) padding-box, var(--nb-grad) border-box;
+  box-shadow: 0 0 22px rgba(160, 140, 255, .3); backdrop-filter: blur(12px); transition: box-shadow .2s; }
+.nb-membtn:hover { box-shadow: 0 0 34px rgba(160, 140, 255, .6); }
+.nb-membtn i { font-style: normal; font-size: 16px; }
+.nb-membtn b { min-width: 22px; padding: 2px 7px; border-radius: 12px; text-align: center; font: 700 11px var(--nb-mono); color: #0b0b22; background: var(--nb-grad); }
+.nb-badge { top: auto !important; bottom: 18px; left: 20px; right: auto !important; }
+#nb-mem { position: fixed; top: 70px; right: 20px; z-index: 1400; width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 110px);
+  display: flex; flex-direction: column; padding: 18px 18px 14px; border-radius: 24px; border: 1.5px solid transparent; color: var(--nb-ink);
+  background: linear-gradient(160deg, rgba(26, 24, 66, .95), rgba(10, 10, 30, .96)) padding-box, var(--nb-grad) border-box;
+  box-shadow: 0 24px 70px rgba(4, 2, 24, .65), 0 0 50px rgba(160, 140, 255, .25); backdrop-filter: blur(16px);
+  font-family: var(--nb-sans); opacity: 0; transform: translateY(-10px) scale(.98); pointer-events: none; transition: opacity .25s, transform .25s; }
+#nb-mem.show { opacity: 1; transform: none; pointer-events: auto; }
+#nb-mem .mh { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+#nb-mem .k { font: 600 11px var(--nb-mono); letter-spacing: .34em; background: var(--nb-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#nb-mem .sub { font-size: 13px; color: var(--nb-mute); margin-top: 4px; }
+#nb-mem .mx { cursor: pointer; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--nb-mute); }
+#nb-mem .mx:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+#nb-mem .mup { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px; border-radius: 18px; cursor: pointer;
+  border: 1.5px dashed rgba(176, 168, 255, .5); background: rgba(140, 150, 255, .08); transition: background .2s; }
+#nb-mem .mup:hover { background: rgba(140, 150, 255, .16); }
+#nb-mem .mup input { display: none; }
+#nb-mem .mup span { font-weight: 600; font-size: 16px; }
+#nb-mem .mup small { font-size: 12px; color: var(--nb-mute); }
+#nb-mem .ml { overflow-y: auto; margin: 12px -4px 0; padding: 0 4px; display: flex; flex-direction: column; gap: 8px; }
+#nb-mem .mi { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 16px; cursor: pointer;
+  background: rgba(140, 150, 255, .08); border: 1px solid rgba(176, 168, 255, .2); transition: background .15s; }
+#nb-mem .mi:hover { background: rgba(183, 148, 255, .18); }
+#nb-mem .mi > i { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; font-style: normal; font-size: 18px; }
+#nb-mem .mk-image { background: rgba(143, 227, 255, .18); color: var(--nb-ice); }
+#nb-mem .mk-pdf { background: rgba(255, 159, 216, .18); color: var(--nb-rose); }
+#nb-mem .mk-text { background: rgba(183, 148, 255, .2); color: var(--nb-vio); }
+#nb-mem .mn { flex: 1; min-width: 0; }
+#nb-mem .mn b { display: block; font-weight: 500; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nb-mem .mn small { font-size: 11.5px; color: var(--nb-mute); }
+#nb-mem .mo { font: 600 11px var(--nb-mono); letter-spacing: .1em; padding: 6px 10px; border-radius: 12px; color: #0b0b22; background: var(--nb-grad); }
+#nb-mem .md { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--nb-mute); font-weight: 400; }
+#nb-mem .md:hover { background: rgba(255, 120, 160, .2); color: #ffd0e4; }
+#nb-mem .mempty { padding: 22px 10px; text-align: center; color: var(--nb-mute); font-size: 14px; line-height: 1.5; }
+#nb-mem .mf { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font: 12px var(--nb-mono); color: var(--nb-mute); }
+#nb-mem .mclear { cursor: pointer; font-weight: 500; color: #ffc2dc; }
+#nb-drop { position: fixed; inset: 0; z-index: 2500; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .2s;
+  background: rgba(8, 6, 30, .6); backdrop-filter: blur(6px); }
+#nb-drop.show { opacity: 1; }
+#nb-drop div { padding: 40px 56px; border-radius: 30px; border: 2px dashed rgba(200, 190, 255, .8); font: 500 22px var(--nb-sans); color: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(30, 26, 76, .6); }
+#nb-drop i { font-style: normal; font-size: 40px; }
+/* a PDF from memory */
+.card.tool.tool-doc { width: 620px; }
+.card.tool .tdoc { width: 100%; height: 620px; border: 0; border-radius: 14px; background: #fff; margin-top: 8px; pointer-events: none; }

@@ -116,15 +116,13 @@
     if (started) return; started = true;
     SFX.unlock();
     init.querySelector(".nb-btn").style.display = "none";
-    try { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (e) {}
     SFX.boot();
-    setVoiceChip("off");                           // voice stays off until you turn it on
     await sleep(500);
     await logLine("Waking core", "OK");
     await logLine("Hand tracking  ·  21 points per hand",
       window.NOCAM ? "NO CAMERA · MOUSE" : BHok() && BH.ready() ? "OK" : "WARMING UP");
     await logLine("PGDM knowledge  ·  " + (KB.length || 13) + " topics", "OK");
-    await logLine("Voice  ·  off until you turn it on", "PRESS V");
+    await logLine("Memory  ·  " + (window.NimbusMemory ? NimbusMemory.count() : 0) + " items", "OK");
     await sleep(600);
     init.classList.add("gone");
     hud.style.display = "";
@@ -140,14 +138,15 @@
       <div class="nb-top">
         <div class="nb-brand"><i class="nb-mark"></i><b>NIMBUS</b><span>PGDM INTELLIGENCE</span></div>
         <div class="nb-status"><div class="nb-chip" id="nb-hands"><i class="nb-dot"></i><span>HANDS 0</span></div>
-          <div class="nb-chip" id="nb-voice"><i class="nb-dot"></i><span>VOICE</span></div></div>
-        <div class="nb-clock"></div>
+          <div class="nb-chip on" id="nb-type"><i class="nb-dot"></i><span>ENTER = TYPE A COMMAND</span></div></div>
+        <div class="nb-right"><div class="nb-membtn nb-ui" title="NIMBUS Memory: upload files">
+          <i>⇪</i><span>Memory</span><b class="nb-memn">0</b></div><div class="nb-clock"></div></div>
       </div>
       <div class="nb-said"><div class="nb-heard"></div><div class="nb-reply"></div></div>
     </div>`);
   document.body.appendChild(hud);
   const heardEl = hud.querySelector(".nb-heard"), replyEl = hud.querySelector(".nb-reply");
-  const handsChip = hud.querySelector("#nb-hands"), voiceChip = hud.querySelector("#nb-voice");
+  const handsChip = hud.querySelector("#nb-hands");
   const clock = hud.querySelector(".nb-clock");
   setInterval(() => {
     const d = new Date();
@@ -165,117 +164,14 @@
   function showReply(t) { replyEl.textContent = t; replyEl.classList.add("show"); clearTimeout(replyT); }
   function hideReplySoon(ms = 2500) { clearTimeout(replyT); replyT = setTimeout(() => replyEl.classList.remove("show"), ms); }
 
-  /* ================= voice out ================= */
-  let VOICE = null, speaking = false, waveTimer = 0, quietUntil = 0;
-  function pickVoice() {
-    const vs = speechSynthesis.getVoices();
-    const pref = [/Google UK English Female/i, /Samantha/i, /Microsoft (Sonia|Libby|Aria|Jenny|Neerja)/i, /Serena|Kate|Tessa|Moira|Karen/i,
-                  /Veena|Heera/i, /en-GB/i, /en-IN/i, /^en/i];
-    for (const p of pref) { const v = vs.find(v => p.test(v.name) || p.test(v.lang)); if (v) return v; }
-    return vs[0] || null;
-  }
-  if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => { VOICE = pickVoice(); };
+  /* ================= replies (on screen; NIMBUS does not speak) ================= */
   function ring(state) { if (BHok()) BH.setRing(state); }
-
-  let voiceOn = false;
   function say(text, opts = {}) {
-    showReply(text);
-    if (!voiceOn) {                                // voice off: the reply is shown, not spoken
-      hideReplySoon(opts.short ? 2200 : 3200 + text.length * 30);
-      if (opts.then) setTimeout(opts.then, 1200 + text.length * 35);
-      return;
-    }
-    if (!("speechSynthesis" in window)) { hideReplySoon(4000 + text.length * 40); return; }
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    VOICE = VOICE || pickVoice();
-    if (VOICE) { u.voice = VOICE; u.lang = VOICE.lang; }
-    u.rate = 1.0; u.pitch = 1.04;
-    let boost = 0;
-    u.onboundary = () => { boost = 1; };
-    u.onstart = () => {
-      speaking = true;
-      clearInterval(waveTimer);
-      waveTimer = setInterval(() => {
-        boost *= 0.75;
-        const a = 18 + boost * 50 + Math.random() * 22;
-        const w = Array.from({ length: 72 }, (_, i) => Math.sin(i * 0.55 + performance.now() / 70) * a * (0.55 + Math.random() * 0.45));
-        if (BHok()) BH.setRing("speaking", w);
-      }, 50);
-    };
-    const end = () => {
-      speaking = false; clearInterval(waveTimer); ring("idle");
-      quietUntil = performance.now() + 700;
-      hideReplySoon(opts.short ? 1200 : 2200);
-      if (opts.then) opts.then();
-    };
-    u.onend = end; u.onerror = end;
-    speechSynthesis.speak(u);
+    showReply(text); ring("idle");
+    hideReplySoon(opts.short ? 2600 : 3600 + text.length * 35);
+    if (opts.then) setTimeout(opts.then, 1200 + text.length * 35);
   }
-
-  /* ================= voice in ================= */
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recog = null, awaitingUntil = 0;
-  const VERB = /^\s*(please\s+|can you\s+|hey\s+)?(show|open|explain|compare|close|clear|quiz|start|stop|pause|resume|reset|set|what is|what's|tell me|menu|lap|plan|good morning|bring|make|get|turn|add|remove|cancel|schedule|what's next|brief me|call me)\b/i;
-  const WAKE = /\b(hey\s+)?(nimbus|nimbis|nimbas|nimbuss|nimbo|nimbu|limbus|numbus|nimbuses)\b[\s,.!]*/i;
-
-  function setVoiceChip(mode) {
-    voiceChip.classList.remove("on", "hot", "off");
-    if (mode) voiceChip.classList.add(mode);
-    voiceChip.querySelector("span").textContent =
-      mode === "hot" ? "LISTENING" : mode === "on" ? 'VOICE ON  ·  TRY "SHOW SWOT"' : mode === "off" ? "VOICE OFF  ·  PRESS V" : "VOICE";
-  }
-
-  function startListening() {
-    if (!SR) { setVoiceChip("off"); return; }
-    if (recog) return;
-    recog = new SR();
-    recog.continuous = true; recog.interimResults = true; recog.lang = "en-IN"; recog.maxAlternatives = 1;
-    recog.onstart = () => setVoiceChip("on");
-    recog.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { recog = null; voiceOn = false; setVoiceChip("off"); showReply("Microphone blocked. Allow it in Chrome, then press V."); hideReplySoon(4000); } };
-    recog.onend = () => { if (recog) setTimeout(() => { try { recog.start(); } catch (e) {} }, 250); };
-    recog.onresult = (ev) => {
-      if (speaking || performance.now() < quietUntil) return;   // don't hear ourselves
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
-        const r = ev.results[i], txt = r[0].transcript.trim();
-        if (!txt) continue;
-        const woke = WAKE.test(txt) || VERB.test(txt) || performance.now() < awaitingUntil;
-        if (!r.isFinal) {
-          if (woke) { ring("listening"); setVoiceChip("hot"); showHeard(txt); }
-          continue;
-        }
-        setVoiceChip("on");
-        if (!woke) { ring("idle"); continue; }
-        const m = txt.match(WAKE);
-        const cmd = m ? txt.slice(m.index + m[0].length).trim() : txt;
-        showHeard(txt);
-        if (!cmd) { awaitingUntil = performance.now() + 7000; SFX.wake(); ring("listening"); setVoiceChip("hot"); say("Yes?", { short: true }); continue; }
-        awaitingUntil = 0;
-        handle(cmd);
-      }
-    };
-    try { recog.start(); } catch (e) {}
-  }
-
-  function setVoice(on) {
-    if (on === voiceOn) return;
-    voiceOn = on;
-    if (on) {
-      if (!SR) { voiceOn = false; showReply("This browser has no speech recognition. Use Chrome, or type with Enter."); hideReplySoon(4000); return; }
-      SFX.wake(); startListening(); say("Voice on.", { short: true });
-    } else {
-      const r = recog; recog = null;               // null first, so onend doesn't restart it
-      try { r && r.stop(); } catch (e) {}
-      try { speechSynthesis.cancel(); } catch (e) {}
-      setVoiceChip("off"); ring("idle"); showReply("Voice off."); hideReplySoon(1500);
-    }
-  }
-  voiceChip.classList.add("nb-ui", "nb-click");
-  voiceChip.addEventListener("click", () => setVoice(!voiceOn));
-  addEventListener("keydown", (e) => {
-    if (!started || e.target === box || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === "v" || e.key === "V") setVoice(!voiceOn);
-  });
+  const WAKE = /\b(hey\s+)?(nimbus)\b[\s,.!]*/i;   // "hey nimbus, ..." typed still works
 
   /* ================= typed command (Enter) ================= */
   const box = $(`<input id="nb-cmd" class="nb-ui" placeholder='Ask Nimbus   e.g. "compare SWOT and Porter"' autocomplete="off">`);
@@ -290,6 +186,125 @@
     if (e.key === "Enter") { const v = box.value.trim(); box.classList.remove("show"); box.blur(); if (v) { showHeard(v); handle(v.replace(WAKE, "")); } }
     if (e.key === "Escape") { box.classList.remove("show"); box.blur(); }
   });
+
+  /* ================= NIMBUS Memory =================
+     One central store for everything you give NIMBUS: images, PDFs and text
+     notes. Kept in this browser (IndexedDB), so it survives reloads and works
+     offline. Upload from the Memory button (top right) or drop files anywhere.
+     Everything in Memory opens as a card from the ring's Memory circle, the
+     drawer, or by typing "show <name>". */
+  const Memory = (() => {
+    const MAX = 25 * 1024 * 1024;
+    const OK = /^(image\/|application\/pdf$|text\/)|\.(md|txt|csv|json|pdf|png|jpe?g|gif|webp|svg)$/i;
+    let db = null, meta = [];
+    const listeners = [];
+    const changed = () => { listeners.forEach(f => { try { f(); } catch (e) {} }); };
+    const open = () => new Promise((res, rej) => {
+      if (db) return res(db);
+      const rq = indexedDB.open("nimbus-memory", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("items", { keyPath: "id" });
+      rq.onsuccess = () => { db = rq.result; res(db); };
+      rq.onerror = () => rej(rq.error);
+    });
+    const tx = async (mode, fn) => { const d = await open(); return new Promise((res, rej) => {
+      const t = d.transaction("items", mode), st = t.objectStore("items"), out = fn(st);
+      t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+    async function refresh() {
+      try {
+        const all = await tx("readonly", st => st.getAll());
+        meta = (all || []).map(({ id, name, type, size, added }) => ({ id, name, type, size, added })).sort((a, b) => b.added - a.added);
+      } catch (e) { meta = []; }
+      changed();
+    }
+    const kindOf = m => /^image\//.test(m.type) || /\.(png|jpe?g|gif|webp|svg)$/i.test(m.name) ? "image"
+      : m.type === "application/pdf" || /\.pdf$/i.test(m.name) ? "pdf" : "text";
+    async function add(files) {
+      let n = 0; const skipped = [];
+      for (const f of files) {
+        if (!OK.test(f.type) && !OK.test(f.name)) { skipped.push(f.name + " (type)"); continue; }
+        if (f.size > MAX) { skipped.push(f.name + " (over 25 MB)"); continue; }
+        const item = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: f.name, type: f.type || "",
+                       size: f.size, added: Date.now(), blob: f };
+        try { await tx("readwrite", st => st.put(item)); n++; } catch (e) { skipped.push(f.name + " (storage full)"); }
+      }
+      await refresh();
+      return { n, skipped };
+    }
+    async function remove(id) { await tx("readwrite", st => st.delete(id)); await refresh(); }
+    async function clear() { await tx("readwrite", st => st.clear()); await refresh(); }
+    async function get(id) { return tx("readonly", st => st.get(id)); }
+    async function show(id) {
+      const it = await get(id); if (!it || !BHok()) return false;
+      const title = it.name.replace(/\.[a-z0-9]+$/i, ""), k = kindOf(it);
+      if (k === "image") BH.openImage(URL.createObjectURL(it.blob), title);
+      else if (k === "pdf") BH.openDoc(URL.createObjectURL(it.blob), title);
+      else BH.openText(title, await it.blob.text());
+      SFX.arrive();
+      return true;
+    }
+    function find(q) {
+      const t = q.toLowerCase().replace(/^(show|open|display)\s+(me\s+)?(my\s+)?(the\s+)?/, "").trim();
+      if (!t) return null;
+      return meta.find(m => m.name.toLowerCase().replace(/\.[a-z0-9]+$/, "") === t) ||
+             meta.find(m => m.name.toLowerCase().includes(t)) || null;
+    }
+    refresh();
+    return { add, remove, clear, show, find, kindOf, count: () => meta.length, list: () => meta.slice(), onChange: f => listeners.push(f) };
+  })();
+  window.NimbusMemory = Memory;
+
+  // ---- the Memory drawer (top right) ----
+  const memBtn = hud.querySelector(".nb-membtn"), memN = hud.querySelector(".nb-memn");
+  const drawer = $(`<div id="nb-mem" class="nb-ui">
+      <div class="mh"><div><div class="k">NIMBUS · MEMORY</div><div class="sub">Everything you give Nimbus, in one place</div></div><b class="mx">✕</b></div>
+      <label class="mup"><input type="file" multiple accept="image/*,.pdf,.md,.txt,.csv,.json,text/*"><span>⇪ Upload files</span><small>Images, PDFs, notes · or drop files anywhere</small></label>
+      <div class="ml"></div>
+      <div class="mf"><span class="mcount"></span><b class="mclear">Clear all</b></div>
+    </div>`);
+  document.body.appendChild(drawer);
+  const drop = $(`<div id="nb-drop" class="nb-ui"><div><i>⇪</i>Drop to add to NIMBUS Memory</div></div>`);
+  document.body.appendChild(drop);
+  const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  const ICON = { image: "▣", pdf: "▤", text: "≡" };
+  function renderDrawer() {
+    const list = Memory.list();
+    memN.textContent = list.length;
+    drawer.querySelector(".mcount").textContent = list.length + (list.length === 1 ? " item" : " items");
+    drawer.querySelector(".mclear").style.display = list.length ? "" : "none";
+    drawer.querySelector(".ml").innerHTML = list.length ? list.map(m =>
+      `<div class="mi" data-id="${m.id}"><i class="mk-${Memory.kindOf(m)}">${ICON[Memory.kindOf(m)]}</i>
+        <div class="mn"><b>${m.name.replace(/[<>&]/g, "")}</b><small>${fmtSize(m.size)} · ${new Date(m.added).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</small></div>
+        <b class="mo">Show</b><b class="md" title="Delete">✕</b></div>`).join("")
+      : `<div class="mempty">Nothing here yet. Upload your timetable, a case PDF, notes or a photo of the whiteboard.</div>`;
+  }
+  Memory.onChange(renderDrawer);
+  renderDrawer();
+  const toggleDrawer = (on) => drawer.classList.toggle("show", on ?? !drawer.classList.contains("show"));
+  memBtn.addEventListener("click", () => toggleDrawer());
+  drawer.querySelector(".mx").addEventListener("click", () => toggleDrawer(false));
+  async function addFiles(files) {
+    if (!files || !files.length) return;
+    const r = await Memory.add([...files]);
+    SFX.success();
+    say(r.n ? `Added ${r.n} item${r.n > 1 ? "s" : ""} to memory.` + (r.skipped.length ? ` Skipped ${r.skipped.join(", ")}.` : "")
+            : "Couldn't add that. Use images, PDFs or text files under 25 MB.", { short: true });
+    toggleDrawer(true);
+  }
+  drawer.querySelector("input[type=file]").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  drawer.querySelector(".ml").addEventListener("click", async (e) => {
+    const row = e.target.closest(".mi"); if (!row) return;
+    if (e.target.closest(".md")) { await Memory.remove(row.dataset.id); return; }
+    if (await Memory.show(row.dataset.id)) toggleDrawer(false);
+  });
+  drawer.querySelector(".mclear").addEventListener("click", async () => {
+    if (confirm("Delete everything in NIMBUS Memory on this browser? This can't be undone.")) await Memory.clear();
+  });
+  // drop files anywhere
+  let dragN = 0;
+  addEventListener("dragenter", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) { dragN++; drop.classList.add("show"); } });
+  addEventListener("dragleave", () => { if (--dragN <= 0) { dragN = 0; drop.classList.remove("show"); } });
+  addEventListener("dragover", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
+  addEventListener("drop", (e) => { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); dragN = 0; drop.classList.remove("show"); addFiles(e.dataTransfer.files); });
 
   /* ================= the day: routine, calendar, plan =================
      Everything is stored on this device (localStorage), per date. The calendar
@@ -421,7 +436,7 @@
     try {
       ring("thinking");
       const rows = sys.querySelector(".rows"); rows.innerHTML = "";
-      const list = [["Hand tracking", BH.hands() ? "ONLINE" : window.NOCAM ? "MOUSE" : "STANDBY"], ["Voice link", recog ? "ONLINE" : "TYPED"],
+      const list = [["Hand tracking", BH.hands() ? "ONLINE" : window.NOCAM ? "MOUSE" : "STANDBY"], ["Memory", (window.NimbusMemory ? NimbusMemory.count() : 0) + " ITEMS"],
         ["Knowledge base", "ONLINE"], ["Calendar", "SYNCED"], ["Day planner", "ONLINE"], ["Study tools", "ONLINE"]];
       list.forEach(([n]) => rows.insertAdjacentHTML("beforeend", `<div class="sr"><span>${n}</span><i><u></u></i><b></b></div>`));
       sys.classList.add("show"); scan.classList.remove("go"); void scan.offsetWidth; scan.classList.add("go");
@@ -468,9 +483,6 @@
   function handle(raw) {
     const c = raw.toLowerCase().replace(/[.?!]+$/, "").trim();
     if (!BHok()) { say("Give me a moment, I'm still waking up."); return; }
-    if (/^(turn\s+)?(voice|mic|microphone)\s+(on|off)$|^turn (on|off) (the )?(voice|mic)$|^(mute|unmute)$/.test(c)) {
-      return setVoice(/\bon\b|unmute/.test(c));
-    }
     ring("thinking"); SFX.wake();
 
     if (quiz && /\b(answer|reveal|tell me|i don'?t know|skip|give up)\b/.test(c)) return revealQuiz();
@@ -511,7 +523,7 @@
     if (/\b(quiz|test me|question me|ask me)\b/.test(c)) return startQuiz();
     if (/\bwho (made|built|created|designed) you\b|\byour (creator|maker)\b/.test(c)) return say("I was built by Rubin, for PGDM students who would rather learn with their hands than a scroll wheel.");
     if (/\b(who are you|introduce yourself|what can you do|help|what are you)\b/.test(c))
-      return say("I'm Nimbus. Say all systems online for your day, or ask me to show a framework, start a timer, or quiz you.");
+      return say("I'm Nimbus. Type all systems online for your day, show a framework, start a timer, quiz me, or open memory.");
     if (/\b(thank|thanks|good job|well done)\b/.test(c)) return say("Always a pleasure.", { short: true });
 
     const cmp = c.match(/\b(?:compare|versus|vs)\b\s*(.+?)\s+(?:and|with|vs|versus|to)\s+(.+)/);
@@ -525,8 +537,11 @@
       return say("I can compare two frameworks. Try: compare SWOT and Porter.");
     }
 
+    if (/^(open |show )?(my )?(memory|uploads?|files)$/.test(c)) { toggleDrawer(true); return say("Your memory.", { short: true }); }
+    const mm = /^(show|open|display)\b/.test(c) ? Memory.find(c) : null;
+    if (mm) { Memory.show(mm.id); return say(mm.name.replace(/\.[a-z0-9]+$/i, "") + ", from memory.", { short: true }); }
     const e = find(c);
-    if (!e) return say("Try: show SWOT, start a 5 minute timer, or quiz me.", { short: true });
+    if (!e) return say("Try: show SWOT, start a 5 minute timer, quiz me, or upload files to Memory.", { short: true });
     if (/\b(explain|tell me about|what is|what's|teach|describe|walk me through|summari[sz]e|read)\b/.test(c)) {
       BH.openNote(e.note, e.name);
       return say(e.say);
